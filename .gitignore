@@ -1,0 +1,11 @@
+secrets.json
+.env
+.env.local
+.env.*.local
+secrets/
+secrets/*
+.vs/
+LMPWebService/bin/
+LMPWebService/bin/*
+LMPWebService/.vs/
+LMPWebService/obj/

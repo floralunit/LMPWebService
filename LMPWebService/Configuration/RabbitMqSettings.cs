@@ -6,7 +6,7 @@
         public string VirtualHost { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
-        public string SendLeadsLmpQueueName { get; set; }
-        public string SendStatusLmpQueueName { get; set; }
+        public string QueueName_SendLeads_LMP { get; set; }
+        public string QueueName_SendStatus_LMP { get; set; }
     }
 }

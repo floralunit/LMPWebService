@@ -23,6 +23,7 @@ var configuration = builder.Configuration;
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMqSettings"));
+builder.Services.Configure<AuthSettings>(configuration.GetSection("AuthSettings"));
 
 
 builder.Services.AddDatabase(configuration);
@@ -33,6 +34,7 @@ builder.Services.AddMassTransitWithRabbitMq(builder.Configuration);
 builder.Services.AddScoped<IMassTransitPublisher, MassTransitPublisher>();
 builder.Services.AddScoped<ISendEndpointProvider>(sp => sp.GetRequiredService<IBus>());
 builder.Services.AddHttpClient<IHttpClientLeadService, HttpClientLeadService>();
+builder.Services.AddTransient<IHttpClientLeadService, HttpClientLeadService>();
 builder.Services.AddSingleton<IMessageQueueService, RabbitMqService>();
 builder.Services.AddScoped<ILeadProcessingService, LeadProcessingService>();
 builder.Services.AddControllers();

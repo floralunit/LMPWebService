@@ -26,8 +26,8 @@ namespace LMPWebService.Services
             _virtualhost = options.Value.VirtualHost;
             _username = options.Value.Username;
             _password = options.Value.Password;
-            _sendLeadQueueName = options.Value.SendLeadsLmpQueueName;
-            _statusLeadQueueName = options.Value.SendStatusLmpQueueName;
+            _sendLeadQueueName = options.Value.QueueName_SendLeads_LMP;
+            _statusLeadQueueName = options.Value.QueueName_SendStatus_LMP;
             _logger = logger;
         }
 

@@ -4,6 +4,6 @@ namespace LMPWebService.Services.Interfaces
 {
     public interface IHttpClientLeadService
     {
-        Task<string> GetLeadDataAsync(string leadId);
+        Task<string> GetLeadDataAsync(string leadId, string outlet_code);
     }
 }

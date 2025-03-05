@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql.EntityFrameworkCore.PostgreSQL; //удалить пакет ОРМ постгреса
 
 namespace LMPWebService.Extensions
 {
@@ -19,8 +18,7 @@ namespace LMPWebService.Extensions
 
             serviceCollection.AddDbContext<AstraDbContext>(options =>
             {
-                //options.UseSqlServer(connectionString); 
-                options.UseNpgsql(connectionString);  ///Заменить потом и удалить пакет ОРМ постгреса
+                options.UseSqlServer(connectionString); 
             });
             return serviceCollection;
         }

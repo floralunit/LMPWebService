@@ -13,73 +13,19 @@ public class AstraDbContext : DbContext
     {
         modelBuilder.Entity<OuterMessageReader>(entity =>
         {
-            entity.ToTable("OuterMessageReader");
+            entity
+                .ToTable("OuterMessageReader", "stella")
+                .ToTable(tb => tb.HasTrigger("[stella].[TR_OuterMessageReader_AU_101]"))
+                .HasKey(b => b.OuterMessageReader_ID);
 
-            entity.HasKey(e => e.OuterMessageReader_ID);
-
-            entity.Property(e => e.OuterMessageReaderName)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.OuterSystem_ID)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.OuterMessageSourceName)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.InsDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.LastSuccessReadDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.InsApplicationUser_ID)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.UpdApplicationUser_ID)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.UpdDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<OuterMessage>(entity =>
         {
-            entity.ToTable("OuterMessage");
-
-            entity.HasKey(e => e.OuterMessage_ID);
-            entity.Property(e => e.OuterMessage_ID)
-                .HasColumnType("uuid")
-                .HasDefaultValueSql("gen_random_uuid()");
-
-            entity.Property(e => e.OuterMessageReader_ID)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.MessageOuter_ID)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.ProcessingStatus)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.MessageText)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.ErrorMessage)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.InsDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.UpdDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity
+                .ToTable("OuterMessage", "stella")
+                .ToTable(tb => tb.HasTrigger("[stella].[TR_OuterMessage_AU_101]"))
+                .HasKey(b => b.OuterMessage_ID);
 
         });
     }

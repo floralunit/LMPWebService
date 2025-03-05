@@ -2,19 +2,20 @@
 using System;
 using System.Threading.Tasks;
 using LMPWebService.DTO;
+using LeadsSaverRabbitMQ.MessageModels;
 
 namespace LMPWebService.Consumers
 {
-    public class LeadStatusReceivedConsumer : IConsumer<LeadReceivedMessage>
+    public class LeadStatusReceivedConsumer : IConsumer<RabbitMQStatusMessage_LMP>
     {
-        private readonly ILogger<LeadReceivedMessage> _logger;
-        public LeadStatusReceivedConsumer(ILogger<LeadReceivedMessage> logger)
+        private readonly ILogger<LeadStatusReceivedConsumer> _logger;
+        public LeadStatusReceivedConsumer(ILogger<LeadStatusReceivedConsumer> logger)
         {
             _logger = logger;
         }
-        public async Task Consume(ConsumeContext<LeadReceivedMessage> context)
+        public async Task Consume(ConsumeContext<RabbitMQStatusMessage_LMP> context)
         {
-            Console.WriteLine($"Получено сообщение: {context.Message.LeadId} - {context.Message.Event}");
+            Console.WriteLine($"Получено сообщение об изменении статуса: {context.Message.Message_ID} - {context.Message.Lead_Id}");
             await Task.CompletedTask;
         }
     }

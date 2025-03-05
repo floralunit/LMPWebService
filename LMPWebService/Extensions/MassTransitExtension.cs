@@ -28,7 +28,7 @@ namespace LMPWebService.Extensions
                         h.Password(rabbitMqSettings.Password);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqSettings.SendStatusLmpQueueName, e =>
+                    cfg.ReceiveEndpoint(rabbitMqSettings.QueueName_SendStatus_LMP, e =>
                     {
                         e.ConfigureConsumer<LeadStatusReceivedConsumer>(context);
                     });

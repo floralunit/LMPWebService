@@ -2,6 +2,7 @@
 using LMPWebService.DTO;
 using LMPWebService.Models;
 using LMPWebService.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Text.Json;
@@ -28,6 +29,19 @@ namespace LMPWebService.Services
             await _dbContext.SaveChangesAsync();
 
             return message.OuterMessage_ID;
+        }
+
+        public async Task<bool> CheckMessageExistAsync(string leadId, int readerId)
+        {
+            var lead = await _dbContext.OuterMessage.FirstOrDefaultAsync(x => x.MessageOuter_ID == leadId && x.OuterMessageReader_ID == readerId);
+
+            if (lead != null)
+            {
+                _logger.LogInformation($"Лид {leadId} уже существует в таблице OuterMessage c ProcessingStatus={lead.ProcessingStatus}", DateTimeOffset.Now);
+                return true;
+            }
+
+            return false;
         }
     }
 }

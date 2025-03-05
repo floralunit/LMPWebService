@@ -6,6 +6,7 @@ using LMPWebService.Configuration;
 using Microsoft.Extensions.Options;
 using LMPWebService.Models;
 using LMPWebService.Services.Interfaces;
+using LeadsSaverRabbitMQ.MessageModels;
 
 namespace LMPWebService.Services
 {
@@ -20,9 +21,9 @@ namespace LMPWebService.Services
             _settings = options.Value;
         }
 
-        public async Task SendLeadReceivedMessage(RabbitMQLeadMessageLmp message)
+        public async Task SendLeadReceivedMessage(RabbitMQLeadMessage_LMP message)
         {
-            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.SendLeadsLmpQueueName}"));
+            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.QueueName_SendLeads_LMP}"));
 
             await sendEndpoint.Send(message);
         }
@@ -30,7 +31,7 @@ namespace LMPWebService.Services
         public async Task SendLeadStatusMessage(Guid leadId, string status)
         {
             var message = new { LeadId = leadId, Status = status };
-            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.SendStatusLmpQueueName}"));
+            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.QueueName_SendLeads_LMP}"));
 
             await sendEndpoint.Send(message);
         }

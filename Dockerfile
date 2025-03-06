@@ -12,10 +12,10 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["LMPWebService/LMPWebService.csproj", "LMPWebService/"]
-RUN dotnet restore "./LMPWebService/LMPWebService.csproj"
+COPY ["LMPWebService.csproj", "."]
+RUN dotnet restore "./LMPWebService.csproj"
 COPY . .
-WORKDIR "/src/LMPWebService"
+WORKDIR "/src/."
 RUN dotnet build "./LMPWebService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап

@@ -43,7 +43,8 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     //var certPath = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Path");
     //var certPassword = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Password");
-    var certPath = "./Certificates/localhost_cert.pfx";
+    //var certPath = "./Certificates/localhost_cert.pfx";
+    var certPath = "app/certificates/localhost_cert.pfx";
     var certPassword = "password";
     var certificate = new X509Certificate2(certPath, certPassword);
     options.ConfigureHttpsDefaults(httpsOptions =>

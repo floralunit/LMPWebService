@@ -8,5 +8,8 @@ namespace LMPWebService.Services.Interfaces
     {
         Task<Guid> SaveMessageAsync(OuterMessage message);
         Task<bool> CheckMessageExistAsync(string leadId, int readerId);
+        Task UpdateMessageAsync(OuterMessage message);
+        Task<OuterMessage> FindMessageAsync(Guid outerMessage_ID);
+        Task<List<OuterMessage>> FindMessagesByStatusAsync(int status);
     }
 }

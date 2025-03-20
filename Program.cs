@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Security.Cryptography.X509Certificates;
 using NLog.Web;
 using Microsoft.Extensions.Options;
 using System.Reflection;
@@ -13,6 +9,11 @@ using LMPWebService.Data.Repositories;
 using LMPWebService.Configuration;
 using LMPWebService.Extensions;
 using LMPWebService.Services.Interfaces;
+using LMPWebService.Jobs;
+using Quartz.Impl;
+using Quartz.Spi;
+using LeadsSaverRabbitMQ.MessageModels;
+using LMPWebService.Consumers;
 
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -30,13 +31,61 @@ builder.Services.AddDatabase(configuration);
 //builder.Services.AddQuartzJobs();
 builder.Services.AddScoped<IOuterMessageRepository, OuterMessageRepository>();
 builder.Services.AddScoped<IOuterMessageService, OuterMessageService>();
-builder.Services.AddMassTransitWithRabbitMq(builder.Configuration);
 builder.Services.AddScoped<IMassTransitPublisher, MassTransitPublisher>();
 builder.Services.AddScoped<ISendEndpointProvider>(sp => sp.GetRequiredService<IBus>());
 builder.Services.AddHttpClient<IHttpClientLeadService, HttpClientLeadService>();
 builder.Services.AddTransient<IHttpClientLeadService, HttpClientLeadService>();
+
+
 builder.Services.AddSingleton<IMessageQueueService, RabbitMqService>();
 builder.Services.AddScoped<ILeadProcessingService, LeadProcessingService>();
+builder.Services.AddScoped<ISendStatusService, SendStatusService>();
+
+builder.Services.AddMassTransit(cfg =>
+{
+    cfg.AddConsumer<LeadStatusReceivedConsumer>();
+
+    cfg.UsingRabbitMq((context, busCfg) =>
+    {
+        var rabbitMqSettings = context.GetRequiredService<IOptions<RabbitMqSettings>>().Value;
+
+        busCfg.Host(rabbitMqSettings.Host, rabbitMqSettings.VirtualHost, h =>
+        {
+            h.Username(rabbitMqSettings.Username);
+            h.Password(rabbitMqSettings.Password);
+        });
+
+        busCfg.ReceiveEndpoint(rabbitMqSettings.QueueName_SendStatus_LMP, e =>
+        {
+            e.PrefetchCount = 16;
+            e.UseMessageRetry(x => x.Interval(2, 100));
+
+            e.ConfigureConsumer<LeadStatusReceivedConsumer>(context);
+        });
+    });
+});
+builder.Services.AddHostedService<BusService>();
+
+builder.Services.AddQuartzHostedService(options =>
+{
+    options.WaitForJobsToComplete = true;
+});
+builder.Services.AddScoped<CheckErrorLeadsJob>();
+
+
+builder.Services.AddSingleton<IJobFactory, ScopedJobFactory>();
+builder.Services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
+
+builder.Services.AddSingleton(provider =>
+{
+    var schedulerFactory = provider.GetRequiredService<ISchedulerFactory>();
+    var scheduler = schedulerFactory.GetScheduler().Result;
+    scheduler.JobFactory = provider.GetRequiredService<IJobFactory>();
+    return scheduler;
+});
+
+builder.Services.AddHostedService<LeadsServiceJobScheduler>();
+
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.WebHost.ConfigureKestrel(options =>
@@ -65,3 +114,5 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+

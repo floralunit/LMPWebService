@@ -33,7 +33,7 @@ namespace LMPWebService.Services
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var token = await GetAccessTokenAsync(outlet_code);
+                var token = await GetAccessTokenAsync(leadId, outlet_code);
                 if (token == null)
                 {
                     _logger.LogError("Токен пустой");
@@ -41,94 +41,10 @@ namespace LMPWebService.Services
                 }
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
 
-                //var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/lead", content);
-                //response.EnsureSuccessStatusCode();
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/lead", content);
+                response.EnsureSuccessStatusCode();
 
-                //var result = await response.Content.ReadAsStringAsync();
-
-                string result = @"
-                {
-                    ""error"": null,
-                    ""lead_info"": {
-                        ""lead_id"": ""58007b35-bd36-45d1-8158-7f74e22c8529"",
-                        ""type_id"": 2,
-                        ""type_name"": ""RFO"",
-                        ""temperature_id"": 2,
-                        ""temperature_name"": ""Горячий"",
-                        ""source_id"": 2,
-                        ""source_name"": ""DWS"",
-                        ""custom_properties_groups"": [
-                            {
-                                ""name"": ""Другое"",
-                                ""sequence"": 100,
-                                ""custom_properties"": [
-                                    {
-                                        ""code"": ""external_id"",
-                                        ""name"": ""external_id"",
-                                        ""type"": 3,
-                                        ""type_name"": ""Int"",
-                                        ""value"": ""10002"",
-                                        ""sequence"": 2
-                                    },
-                                    {
-                                        ""code"": ""Комменатрий"",
-                                        ""name"": ""Комменатрий"",
-                                        ""type"": 1,
-                                        ""type_name"": ""String"",
-                                        ""value"": ""комментарий"",
-                                        ""sequence"": 3
-                                    },
-                                    {
-                                        ""code"": ""flow_id"",
-                                        ""name"": ""flow_id"",
-                                        ""type"": 3,
-                                        ""type_name"": ""Int"",
-                                        ""value"": ""1"",
-                                        ""sequence"": 1
-                                    }
-                                ]
-                            }
-                        ],
-                        ""contact"": {
-                            ""first_name"": ""Иван"",
-                            ""last_name"": ""Иванов"",
-                            ""middle_name"": """",
-                            ""contect_phone"": ""+79441111234"",
-                            ""email"": ""test@test.com"",
-                            ""address"": null,
-                            ""brand"": null,
-                            ""car_model"": """",
-                            ""car_model_year"": null,
-                            ""gender"": null,
-                            ""date_of_birth"": null,
-                            ""vin"": null
-                        },
-                        ""status_id"": 6,
-                        ""status_name"": ""ДЦ - Передан"",
-                        ""dealer_status_id"": 0,
-                        ""dealer_status_name"": ""Новый"",
-                        ""dealer_status_crm_name"": null,
-                        ""public_id"": 34511,
-                        ""expiration_datetime"": null,
-                        ""dealer_call_date"": null,
-                        ""dealer_comment"": null,
-                        ""dealer_receive_date"": ""2021-06-07T13:25:00.367"",
-                        ""dealer_refuse_comment"": null,
-                        ""client_dms_id"": null,
-                        ""dealer_refuse_reason_id"": null,
-                        ""dealer_visit_date"": null,
-                        ""dealer_visit_planned_date"": null,
-                        ""dealer_recall_date"": null,
-                        ""visit_planned_date"": null,
-                        ""lead_group_id"": ""255313f3-7761-42c2-8b11-2d35b411009b"",
-                        ""dealer_refuse_reason_name"": null,
-                        ""qulification_required"": true,
-                        ""responsible_user"": null,
-                        ""source_channel_detail"": ""DWS RFO stock"",
-                        ""communication_target"": ""Продажа новых автомобилей/мотоциклов"",
-                        ""source_campaign"": ""test_campaign_name""
-                    }
-                }";
+                var result = await response.Content.ReadAsStringAsync();
 
 
                 return result;
@@ -140,7 +56,7 @@ namespace LMPWebService.Services
             }
         }
 
-        public async Task<TokenResponse> GetAccessTokenAsync(string outlet_code)
+        public async Task<TokenResponse> GetAccessTokenAsync(string lead_id, string outlet_code)
         {
             try
             {
@@ -178,6 +94,37 @@ namespace LMPWebService.Services
             }
         }
 
+        public async Task<LeadStatusResponseDto> SendStatusAsync(string lead_id, string outlet_code)
+        {
+            try
+            {
+                var requestBody = new { lead_id = lead_id };
+                var json = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var token = await GetAccessTokenAsync(lead_id, outlet_code);
+                if (token == null)
+                {
+                    _logger.LogError("Токен пустой");
+                    return null;
+                }
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
+
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/lead_distributed", content);
+                response.EnsureSuccessStatusCode();
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
+
+                return statusResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при отправке статуса лида {lead_id}");
+                throw;
+            }
+        }
+
         /// <summary>
         /// Модель для десериализации ответа с токеном.
         /// </summary>
@@ -186,6 +133,15 @@ namespace LMPWebService.Services
             public string access_token { get; set; }
             public int expires_in { get; set; }
             public string token_type { get; set; }
+        }
+
+        /// <summary>
+        /// Модель для десериализации ответа со статусом.
+        /// </summary>
+        public class LeadStatusResponseDto
+        {
+            public string error { get; set; }
+            public bool is_success { get; set; }
         }
 
     }

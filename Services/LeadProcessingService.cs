@@ -1,9 +1,6 @@
 ﻿using LeadsSaverRabbitMQ.MessageModels;
-using LMPWebService.Configuration;
 using LMPWebService.Models;
 using LMPWebService.Services.Interfaces;
-using static MassTransit.Monitoring.Performance.BuiltInCounters;
-using System.Text.Json.Nodes;
 using System.Transactions;
 using Newtonsoft.Json;
 
@@ -62,8 +59,8 @@ namespace LMPWebService.Services
                         MessageOuter_ID = public_id,
                         ProcessingStatus = 0,
                         MessageText = messageText,
-                        InsDate = DateTime.Now,
-                        UpdDate = DateTime.Now
+                        InsDate = DateTime.Now.AddHours(3),
+                        UpdDate = DateTime.Now.AddHours(3)
                     };
 
                     await _messageService.SaveMessageAsync(dbRecord);

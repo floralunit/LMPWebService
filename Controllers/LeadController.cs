@@ -29,9 +29,24 @@ namespace LMPWebService.Controllers
             _messageService = messageService;
             _leadProcessingService = leadProcessingService;
         }
+        [HttpGet("receive")]
+        public async Task<IActionResult> ReceiveLead([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
+        {
+            Guid.TryParse(request?.lead_id, out var leadIdGuid);
+
+            if (leadIdGuid == Guid.Empty || request?.lead_id == null || string.IsNullOrEmpty(outlet_code))
+                return BadRequest("Некорректные данные");
+
+            var result = await _leadProcessingService.ProcessLeadAsync(leadIdGuid, outlet_code);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.ErrorMessage);
+
+            return Ok(new { message = "Лид успешно получен и отправлен в работу" });
+        }
 
         [HttpPost("receive")]
-        public async Task<IActionResult> ReceiveLead([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
+        public async Task<IActionResult> ReceiveLeadPost([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
         {
             Guid.TryParse(request?.lead_id, out var leadIdGuid);
 

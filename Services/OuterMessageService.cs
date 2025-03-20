@@ -1,12 +1,6 @@
-﻿using LMPWebService.Data;
-using LMPWebService.DTO;
-using LMPWebService.Models;
+﻿using LMPWebService.Models;
 using LMPWebService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LMPWebService.Services
 {
@@ -21,6 +15,27 @@ namespace LMPWebService.Services
             _dbContext = dbContext;
             _queueService = queueService;
             _logger = logger;
+        }
+
+        public async Task<List<OuterMessage>> FindMessagesByStatusAsync(int status)
+        {
+            var messageList = await _dbContext.OuterMessage.Where(x => x.ProcessingStatus == status).ToListAsync();
+
+            return messageList;
+        }
+
+        public async Task<OuterMessage> FindMessageAsync(Guid outerMessage_ID)
+        {
+            var messageDB = await _dbContext.OuterMessage.FirstOrDefaultAsync(x => x.OuterMessage_ID == outerMessage_ID);
+
+            return messageDB;
+        }
+
+
+        public async Task UpdateMessageAsync(OuterMessage message)
+        {
+            _dbContext.OuterMessage.Update(message);
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<Guid> SaveMessageAsync(OuterMessage message)

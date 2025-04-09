@@ -8,6 +8,7 @@ using LMPWebService.Configuration;
 using LMPWebService.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using YourNamespace.Dtos;
 
 namespace LMPWebService.Services
 {
@@ -94,11 +95,11 @@ namespace LMPWebService.Services
             }
         }
 
-        public async Task<LeadStatusResponseDto> SendStatusAsync(string lead_id, string outlet_code)
+        public async Task<LeadStatusResponseDto> SendStatusResponsibleAsync(string lead_id, string outlet_code, string responsibleName)
         {
             try
             {
-                var requestBody = new { lead_id = lead_id };
+                var requestBody = new { lead_id = lead_id, responsible_user = responsibleName };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -120,7 +121,37 @@ namespace LMPWebService.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при отправке статуса лида {lead_id}");
+                _logger.LogError(ex, $"Ошибка при отправке статуса о взятии в работу лида {lead_id}");
+                throw;
+            }
+        }
+
+        public async Task<LeadStatusResponseDto> SendStatusAsync(LeadStatusRequestDto request, string outlet_code)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(request);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var token = await GetAccessTokenAsync(request.lead_id, outlet_code);
+                if (token == null)
+                {
+                    _logger.LogError("Токен пустой");
+                    return null;
+                }
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
+
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/status", content);
+                response.EnsureSuccessStatusCode();
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
+
+                return statusResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при отправке статуса {request.status} лида {request.lead_id}");
                 throw;
             }
         }

@@ -13,12 +13,15 @@ namespace LMPWebService.Services
     public class MassTransitPublisher : IMassTransitPublisher
     {
         private readonly ISendEndpointProvider _sendEndpointProvider;
+        private readonly IPublishEndpoint _publishEndpoint;
+
         private readonly RabbitMqSettings _settings;
 
-        public MassTransitPublisher(ISendEndpointProvider sendEndpointProvider, IOptions<RabbitMqSettings> options)
+        public MassTransitPublisher(ISendEndpointProvider sendEndpointProvider, IOptions<RabbitMqSettings> options, IPublishEndpoint publishEndpoint)
         {
             _sendEndpointProvider = sendEndpointProvider;
             _settings = options.Value;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task SendLeadReceivedMessage(RabbitMQLeadMessage_LMP message)
@@ -28,12 +31,12 @@ namespace LMPWebService.Services
             await sendEndpoint.Send(message);
         }
 
-        public async Task SendLeadStatusMessage(Guid leadId, string status)
+        public async Task SendLeadStatusMessage(RabbitMQStatusMessage_LMP message)
         {
-            var message = new { LeadId = leadId, Status = status };
-            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.QueueName_SendLeads_LMP}"));
+            //var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{_settings.QueueName_SendStatus_LMP}"));
 
-            await sendEndpoint.Send(message);
+            //await sendEndpoint.Send(message);
+            await _publishEndpoint.Publish<RabbitMQStatusMessage_LMP>(message);
         }
     }
 }

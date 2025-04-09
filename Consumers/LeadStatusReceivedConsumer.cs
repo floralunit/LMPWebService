@@ -14,7 +14,6 @@ namespace LMPWebService.Consumers
 
         private readonly ISendStatusService _sendStatusService;
 
-
         public LeadStatusReceivedConsumer(
                                 ILogger<LeadStatusReceivedConsumer> logger,
                                 ISendStatusService sendStatusService)
@@ -24,8 +23,8 @@ namespace LMPWebService.Consumers
         }
         public async Task Consume(ConsumeContext<RabbitMQStatusMessage_LMP> context)
         {
-            _logger.LogInformation($"NEW LMP STATUS MESSAGE Received: LMP Status Message ({context.Message.Message_ID}))");
-            await _sendStatusService.SendStatusAsync(context.Message.Message_ID, context.Message.Outlet_Code);
+            _logger.LogInformation($"NEW LMP STATUS MESSAGE Received: LMP Status Message for document ({context.Message.astra_document_id}))");
+            await _sendStatusService.SendStatusAsync(context.Message);
         }
     }
 }

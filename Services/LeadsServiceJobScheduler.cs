@@ -1,4 +1,5 @@
-﻿using LMPWebService.Jobs;
+﻿using LeadsSaver_RabbitMQ.Jobs;
+using LMPWebService.Jobs;
 using Quartz;
 
 public class LeadsServiceJobScheduler : IHostedService
@@ -28,6 +29,20 @@ public class LeadsServiceJobScheduler : IHostedService
             .Build();
 
         await _scheduler.ScheduleJob(job2, trigger2, cancellationToken);
+
+        var job1 = JobBuilder.Create<CheckResponsibleJob>()
+            .WithIdentity($"checkResponsibleJob", "groupCheckResponsibleJob")
+            .UsingJobData("test", "test")
+            .Build();
+
+        var trigger1 = TriggerBuilder.Create()
+            .WithIdentity($"checkResponsibleJob", "groupCheckResponsibleJob")
+            .StartNow()
+            //.WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromMinutes(30)).RepeatForever())
+            .WithCronSchedule("0 0 6-21 ? * * *", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
+            .Build();
+
+        await _scheduler.ScheduleJob(job1, trigger1, cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

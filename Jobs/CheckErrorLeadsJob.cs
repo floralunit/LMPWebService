@@ -14,14 +14,14 @@ namespace LMPWebService.Jobs
         private readonly IMassTransitPublisher _massTransitPublisher;
         private readonly ILogger<CheckErrorLeadsJob> _logger;
 
-        private readonly ISendStatusService _sendStatusService;
+        //private readonly ISendStatusService _sendStatusService;
 
         public CheckErrorLeadsJob(
                                 IHttpClientLeadService httpClientLeadService,
                                 IOuterMessageService messageService,
                                 IMassTransitPublisher massTransitPublisher,
-                                ILogger<CheckErrorLeadsJob> logger,
-                                ISendStatusService sendStatusService
+                                ILogger<CheckErrorLeadsJob> logger
+                                //ISendStatusService sendStatusService
 
             )
         {
@@ -29,7 +29,7 @@ namespace LMPWebService.Jobs
             _messageService = messageService;
             _massTransitPublisher = massTransitPublisher;
             _logger = logger;
-            _sendStatusService = sendStatusService;
+            //_sendStatusService = sendStatusService;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -77,24 +77,24 @@ namespace LMPWebService.Jobs
                 }
             }
 
-            foreach (var lead4A in errorLeads4A)
-            {
-                var jsonRecord = lead4A.MessageText;
-                var jsonObject = JsonConvert.DeserializeObject<dynamic>(jsonRecord);
-                string outlet_code;
+            //foreach (var lead4A in errorLeads4A)
+            //{
+            //    var jsonRecord = lead4A.MessageText;
+            //    var jsonObject = JsonConvert.DeserializeObject<dynamic>(jsonRecord);
+            //    string outlet_code;
 
-                var leadinfo = jsonObject?.lead_info;
-                if (leadinfo != null)
-                {
-                    outlet_code = leadinfo.outlet_code.ToString();
-                }
-                else
-                {
-                    outlet_code = jsonObject?.outlet_code?.ToString();
-                }
-                await _sendStatusService.SendStatusAsync(lead4A.OuterMessage_ID, outlet_code.Substring(0, 5));
-                _logger.LogInformation($"Сообщение {lead4A.OuterMessage_ID} было повторно отправлено на обработку статуса подтверждения", DateTimeOffset.Now);
-            }
+            //    var leadinfo = jsonObject?.lead_info;
+            //    if (leadinfo != null)
+            //    {
+            //        outlet_code = leadinfo.outlet_code.ToString();
+            //    }
+            //    else
+            //    {
+            //        outlet_code = jsonObject?.outlet_code?.ToString();
+            //    }
+            //    await _sendStatusService.SendStatusResponsibleAsync(lead4A.OuterMessage_ID, outlet_code.Substring(0, 5));
+            //    _logger.LogInformation($"Сообщение {lead4A.OuterMessage_ID} было повторно отправлено на обработку статуса подтверждения", DateTimeOffset.Now);
+            //}
 
         }
     }

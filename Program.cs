@@ -14,6 +14,7 @@ using Quartz.Impl;
 using Quartz.Spi;
 using LeadsSaverRabbitMQ.MessageModels;
 using LMPWebService.Consumers;
+using LeadsSaver_RabbitMQ.Jobs;
 
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -62,6 +63,14 @@ builder.Services.AddMassTransit(cfg =>
 
             e.ConfigureConsumer<LeadStatusReceivedConsumer>(context);
         });
+
+        // ”казываем, что сообщени€ типа LeadMessage будут отправл€тьс€ в конкретную очередь
+        busCfg.Message<RabbitMQStatusMessage_LMP>(x => x.SetEntityName(rabbitMqSettings.QueueName_SendStatus_LMP));
+        busCfg.Publish<RabbitMQStatusMessage_LMP>(x =>
+        {
+            x.ExchangeType = "fanout";
+            x.Durable = true;
+        });
     });
 });
 builder.Services.AddHostedService<BusService>();
@@ -71,6 +80,7 @@ builder.Services.AddQuartzHostedService(options =>
     options.WaitForJobsToComplete = true;
 });
 builder.Services.AddScoped<CheckErrorLeadsJob>();
+builder.Services.AddScoped<CheckResponsibleJob>();
 
 
 builder.Services.AddSingleton<IJobFactory, ScopedJobFactory>();

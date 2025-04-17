@@ -98,25 +98,25 @@ builder.Services.AddHostedService<LeadsServiceJobScheduler>();
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
-builder.WebHost.ConfigureKestrel(options =>
-{
-    //var certPath = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Path");
-    //var certPassword = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Password");
-    //var certPath = "./Certificates/localhost_cert.pfx";
-    //var certPath = "/app/certificates/localhost_cert.pfx";
-    //var certPassword = "password";
-    //var certificate = new X509Certificate2(certPath, certPassword);
-    //options.ConfigureHttpsDefaults(httpsOptions =>
-    //{
-    //    httpsOptions.ServerCertificate = certificate;
-    //});
-    options.ListenAnyIP(17171);
-    //options.ListenAnyIP(1717, listenOptions =>
-    // {
-    //     listenOptions.UseHttps("/app/certificates/localhost_cert.pfx", "password");
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    //var certPath = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Path");
+//    //var certPassword = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Password");
+//    //var certPath = "./Certificates/localhost_cert.pfx";
+//    //var certPath = "/app/certificates/localhost_cert.pfx";
+//    //var certPassword = "password";
+//    //var certificate = new X509Certificate2(certPath, certPassword);
+//    //options.ConfigureHttpsDefaults(httpsOptions =>
+//    //{
+//    //    httpsOptions.ServerCertificate = certificate;
+//    //});
+//   // options.ListenAnyIP(17171);
+//    //options.ListenAnyIP(1717, listenOptions =>
+//    // {
+//    //     listenOptions.UseHttps("/app/certificates/localhost_cert.pfx", "password");
 
-    // });
-});
+//    // });
+//});
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();

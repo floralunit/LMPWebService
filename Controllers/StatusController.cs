@@ -32,14 +32,72 @@ namespace LMPWebService.Controllers
         }
 
         [HttpPost("status_changed")]
-        public async Task<IActionResult> DocumentStatusChanged([FromBody] RabbitMQStatusMessage_LMP request)
+        [ProducesResponseType(typeof(PostStatusResponse), 200)]
+        [ProducesResponseType(typeof(PostStatusResponse), 400)]
+        public async Task<ActionResult<PostStatusResponse>> DocumentStatusChanged([FromBody] RabbitMQStatusMessage_LMP request)
         {
+            var response = new PostStatusResponse();
 
-            if (request?.astra_document_id == Guid.Empty || request?.astra_document_id == null || request?.astra_document_type_id == Guid.Empty || request?.astra_document_type_id == null)
-                return BadRequest("Некорректные данные");
+            if (request?.astra_document_id == Guid.Empty ||
+                request?.astra_document_id == null)
+            {
+                response.success = false;
+                response.type = "BadRequest";
+                response.title = "Некорректные данные";
+                response.errors = new Dictionary<string, string>
+                    {
+                        {"astra_document_id", "Неверный идентификатор документа"}
+                    };
+                return BadRequest(response);
+            }
 
-            await _massTransitPublisher.SendLeadStatusMessage(request);
-            return Ok();
+
+            //if (request?.astra_document_subtype_id == null)
+            //{
+            //    response.success = false;
+            //    response.type = "BadRequest";
+            //    response.title = "Некорректные данные";
+            //    response.errors = new Dictionary<string, string>
+            //        {
+            //            {"astra_document_subtype_id", "Неверный тип документа"}
+            //        };
+            //    return BadRequest(response);
+            //}
+
+
+            if (request?.astra_document_status_id == Guid.Empty ||
+                request?.astra_document_status_id == null)
+            {
+                response.success = false;
+                response.type = "BadRequest";
+                response.title = "Некорректные данные";
+                response.errors = new Dictionary<string, string>
+                    {
+                        {"astra_document_status_id", "Неверный статус документа"}
+                    };
+                return BadRequest(response);
+            }
+
+            try
+            {
+                await _massTransitPublisher.SendLeadStatusMessage(request);
+
+                response.success = true;
+                response.type = "Success";
+                response.title = "Статус успешно обновлен";
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.success = false;
+                response.type = "InternalServerError";
+                response.title = "Ошибка при обработке запроса";
+                response.errors = new Dictionary<string, string>
+                    {
+                        {"ServerError", ex.Message}
+                    };
+                return StatusCode(500, response);
+            }
         }
     }
 }

@@ -4,7 +4,6 @@ using LMPWebService.Services.Interfaces;
 using System.Transactions;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata;
 
 namespace LMPWebService.Services
 {
@@ -15,17 +14,21 @@ namespace LMPWebService.Services
         private readonly IOuterMessageService _messageService;
         private readonly IMassTransitPublisher _massTransitPublisher;
 
+        private readonly ILogger<LeadProcessingService> _logger;
+
         public LeadProcessingService(
             IHttpClientLeadService httpClientLeadService,
             IOuterMessageService messageService,
             IMassTransitPublisher massTransitPublisher,
-            AstraDbContext dbContext
+            AstraDbContext dbContext,
+            ILogger<LeadProcessingService> logger
             )
         {
             _httpClientLeadService = httpClientLeadService;
             _messageService = messageService;
             _massTransitPublisher = massTransitPublisher;
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         public async Task<ProcessingResult> ProcessLeadAsync(Guid leadId, string outlet_code)
@@ -38,22 +41,32 @@ namespace LMPWebService.Services
             {
                 try
                 {
+                    var outlet_code5 = outlet_code.Length >= 5 ? outlet_code.Substring(0, 5) : outlet_code;
+                    var outerReader = await _messageService.FindReaderByOutletCodeAsync(outlet_code5);
+                    if (outerReader == null)
+                    {
+                        _logger.LogError($"[LeadProcessingService] для outlet_code {outlet_code5} не найден readerID");
+                        return ProcessingResult.Failure("Внутрення ошибка обработки лида");
+                    }
+
                     var jsonRecord = leadData.ToString();
                     var jsonObject = JsonConvert.DeserializeObject<dynamic>(jsonRecord);
 
                     if (jsonObject?.error != null)
                     {
-                        return ProcessingResult.Failure(jsonObject?.error.ToString());
+                        _logger.LogError($"[LeadProcessingService] ошибка обработи лида {leadId} {outlet_code} {jsonObject?.error}");
+                        return ProcessingResult.Failure("Внутрення ошибка обработки лида");
                     }
 
                     string? public_id = jsonObject?.lead_info?.public_id.ToString();
-                    var exist = await _messageService.CheckMessageExistAsync(public_id, 25);
+                    var exist = await _messageService.CheckMessageExistAsync(public_id, outerReader.OuterMessageReader_ID);
 
                     var statusID = jsonObject?.lead_info?.status_id.ToString();
                     if (statusID == "40") // когда пришел спам и надо удалить созданное обращение
                     {
                         if (!exist)
                         {
+                            _logger.LogError($"[LeadProcessingService] Лид {leadId} не поступал в обработку. Обработка статуса 40 невозможна.");
                             return ProcessingResult.Failure("Данный лид не поступал в обработку. Обработка статуса 40 невозможна."); ;
                         }
                         var messageFound = await _messageService.FindMessageAsync(leadId);
@@ -63,8 +76,9 @@ namespace LMPWebService.Services
                             return ProcessingResult.Success();
                         }
 
-                        var docState = eMessage.DocumentAllowedState_ID;
-                        var docID = eMessage.DocumentBase_ID;
+                        var docBase = await _dbContext.DocumentBase.Where(x => x.DocumentBase_ID == eMessage.EMessage_ID).FirstOrDefaultAsync();
+                        var docState = docBase.DocumentAllowedState_ID;
+                        var docID = docBase.DocumentBase_ID;
                         Guid.TryParse("1E835730-9CB3-4C47-8397-B7BF7CF0231F", out var userID); // Импорт лидов
 
                         // Если документ уже в состоянии "Удалено" или "Отработано" - ничего не делаем
@@ -114,7 +128,7 @@ namespace LMPWebService.Services
                     var dbRecord = new OuterMessage
                     {
                         OuterMessage_ID = leadId,
-                        OuterMessageReader_ID = 25,
+                        OuterMessageReader_ID = outerReader.OuterMessageReader_ID,
                         MessageOuter_ID = public_id,
                         ProcessingStatus = 0,
                         MessageText = messageText,
@@ -126,8 +140,9 @@ namespace LMPWebService.Services
 
                     var message = new RabbitMQLeadMessage_LMP
                     {
-                        Message_ID = leadId,
-                        OutletCode = outlet_code
+                        OuterMessage_ID = leadId,
+                        OuterMessageReader_ID = outerReader.OuterMessageReader_ID,
+                        OutletCode = outlet_code5
                     };
 
                     //throw new RabbitMqConnectionException("Искусственная ошибка при публикации в RabbitMQ");
@@ -141,6 +156,8 @@ namespace LMPWebService.Services
                     var errorMes = $"Error while saving lead and pushing to RabbitMQ";
                     if (ex.InnerException != null)
                         errorMes += $"\nInnerException: {ex.InnerException.Message}";
+
+                    _logger.LogError(errorMes);
 
                     return ProcessingResult.Failure($"Внутренняя ошибка обработки лида: {errorMes}");
                 }

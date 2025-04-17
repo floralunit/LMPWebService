@@ -9,6 +9,11 @@ public class AstraDbContext : DbContext
     public DbSet<OuterMessage> OuterMessage { get; set; }
     public DbSet<EMessage> EMessage { get; set; }
     public DbSet<EMessageResponsibleWorker> EMessageResponsibleWorker { get; set; }
+    public DbSet<DocumentBase> DocumentBase { get; set; }
+    public DbSet<DocumentBaseParent> DocumentBaseParent { get; set; }
+    public DbSet<WorkOrder> WorkOrder { get; set; }
+    public DbSet<Contact> Contact { get; set; }
+    public DbSet<Interest> Interest { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +46,41 @@ public class AstraDbContext : DbContext
             entity
                 .ToTable("EMessageResponsibleWorker", "dbo")
                 .HasKey(b => b.EMessage_ID);
+
+        });
+        modelBuilder.Entity<DocumentBase>(entity =>
+        {
+            entity
+                .ToTable("DocumentBase", "dbo")
+                .HasKey(b => b.DocumentBase_ID);
+
+        });
+        modelBuilder.Entity<DocumentBaseParent>(entity =>
+        {
+            entity
+                .ToTable("DocumentBaseParent", "dbo")
+                .HasKey(b => b.DocumentBaseParent_ID);
+
+        });
+        modelBuilder.Entity<WorkOrder>(entity =>
+        {
+            entity
+                .ToTable("WorkOrder", "dbo")
+                .HasKey(b => b.WorkOrder_ID);
+
+        });
+        modelBuilder.Entity<Contact>(entity =>
+        {
+            entity
+                .ToTable("Contact", "dbo")
+                .HasKey(b => b.Contact_ID);
+
+        });
+        modelBuilder.Entity<Interest>(entity =>
+        {
+            entity
+                .ToTable("Interest", "dbo")
+                .HasKey(b => b.Interest_ID);
 
         });
     }

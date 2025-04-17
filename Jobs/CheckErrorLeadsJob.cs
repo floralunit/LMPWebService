@@ -59,10 +59,12 @@ namespace LMPWebService.Jobs
                     {
                         outlet_code = jsonObject?.outlet_code?.ToString();
                     }
+                    var outlet_code5 = outlet_code.Length >= 5 ? outlet_code.Substring(0, 5) : outlet_code;
                     var message = new RabbitMQLeadMessage_LMP
                     {
-                        Message_ID = lead3A.OuterMessage_ID,
-                        OutletCode = outlet_code.Substring(0, 5)
+                        OuterMessage_ID = lead3A.OuterMessage_ID,
+                        OuterMessageReader_ID = lead3A.OuterMessageReader_ID,
+                        OutletCode = outlet_code5
                     };
                     await _massTransitPublisher.SendLeadReceivedMessage(message);
                     _logger.LogInformation($"Сообщение {lead3A.OuterMessage_ID} было повторно отправлено в очередь на создание обращений", DateTimeOffset.Now);

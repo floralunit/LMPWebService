@@ -19,7 +19,8 @@ namespace LMPWebService.Services
 
         public async Task<List<OuterMessage>> FindMessagesByStatusAsync(int status)
         {
-            var messageList = await _dbContext.OuterMessage.Where(x => x.ProcessingStatus == status).ToListAsync();
+            var messageList = await _dbContext.OuterMessage.Where(x => x.ProcessingStatus == status 
+                                && new int[] {22, 23, 24, 25, 26, 27}.Contains(x.OuterMessageReader_ID) ).ToListAsync();
 
             return messageList;
         }
@@ -46,17 +47,16 @@ namespace LMPWebService.Services
             return message.OuterMessage_ID;
         }
 
-        public async Task<bool> CheckMessageExistAsync(string leadId, int readerId)
+        public async Task<bool> CheckMessageExistAsync(string leadId, int readerID)
         {
-            var lead = await _dbContext.OuterMessage.FirstOrDefaultAsync(x => x.MessageOuter_ID == leadId && x.OuterMessageReader_ID == readerId);
+            var lead = await _dbContext.OuterMessage.FirstOrDefaultAsync(x => x.MessageOuter_ID == leadId && x.OuterMessageReader_ID == readerID);
 
-            if (lead != null)
-            {
-                _logger.LogInformation($"Лид {leadId} уже существует в таблице OuterMessage c ProcessingStatus={lead.ProcessingStatus}", DateTimeOffset.Now);
-                return true;
-            }
-
-            return false;
+            return lead != null;
         }
+        public async Task<OuterMessageReader?> FindReaderByOutletCodeAsync(string outlet_code)
+        {
+            return await _dbContext.OuterMessageReader.FirstOrDefaultAsync(x => x.OuterMessageReaderName.Contains(outlet_code));
+        }
+
     }
 }

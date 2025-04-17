@@ -111,11 +111,11 @@ builder.WebHost.ConfigureKestrel(options =>
     //    httpsOptions.ServerCertificate = certificate;
     //});
     options.ListenAnyIP(17171);
-    options.ListenAnyIP(1717, listenOptions =>
-     {
-         listenOptions.UseHttps("/app/certificates/localhost_cert.pfx", "password");
+    //options.ListenAnyIP(1717, listenOptions =>
+    // {
+    //     listenOptions.UseHttps("/app/certificates/localhost_cert.pfx", "password");
 
-     });
+    // });
 });
 
 var app = builder.Build();

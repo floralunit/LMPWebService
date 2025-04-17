@@ -20,7 +20,7 @@ namespace LMPWebService.Services
         public async Task<List<OuterMessage>> FindMessagesByStatusAsync(int status)
         {
             var messageList = await _dbContext.OuterMessage.Where(x => x.ProcessingStatus == status 
-                                && new int[] {22, 23, 24, 25, 26, 27}.Contains(x.OuterMessageReader_ID) ).ToListAsync();
+                                && new int[] {24, 25, 26, 27, 28, 29}.Contains(x.OuterMessageReader_ID) ).ToListAsync();
 
             return messageList;
         }

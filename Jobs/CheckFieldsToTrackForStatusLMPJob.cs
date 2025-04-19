@@ -67,7 +67,7 @@ namespace LeadsSaver_RabbitMQ.Jobs
                             continue;
                         }
 
-                        if (pendingMessage.FieldName == "ResponsibleUser_ID")
+                        if (pendingMessage.FieldName == "ResponsibleUserName")
                         {
                             if (Guid.TryParse(pendingMessage.FieldContent, out var responsibleID))
                             {

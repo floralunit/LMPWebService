@@ -28,9 +28,9 @@ namespace LeadsSaver_RabbitMQ.Jobs
 
         public async Task Execute(IJobExecutionContext context)
         {
-            _logger.LogInformation("");
-            _logger.LogInformation("");
-            _logger.LogInformation($"Job {context.JobDetail.Key.Name} started", DateTimeOffset.Now);
+            //_logger.LogInformation("");
+            //_logger.LogInformation("");
+            //_logger.LogInformation($"Job {context.JobDetail.Key.Name} started", DateTimeOffset.Now);
 
             try
             {
@@ -41,7 +41,7 @@ namespace LeadsSaver_RabbitMQ.Jobs
 
                 if (!pendingMessages.Any())
                 {
-                    _logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений со статусом 0 для обработки.");
+                    //_logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений со статусом 0 для обработки.");
                     return;
                 }
 

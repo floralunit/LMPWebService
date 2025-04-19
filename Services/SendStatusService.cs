@@ -9,7 +9,7 @@ namespace LMPWebService.Services
 {
     public interface ISendStatusService
     {
-        Task SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName);
+        Task<bool> SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName);
         Task SendStatusAsync(RabbitMQStatusMessage_LMP message);
     }
 
@@ -32,9 +32,10 @@ namespace LMPWebService.Services
             _httpClientLeadService = httpClientLeadService ?? throw new ArgumentNullException(nameof(httpClientLeadService));
             _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+
         }
 
-        public async Task SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName)
+        public async Task<bool> SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName)
         {
             if (string.IsNullOrWhiteSpace(outletCode))
                 throw new ArgumentException("[SendStatusService] Outlet code cannot be null or empty", nameof(outletCode));
@@ -46,7 +47,7 @@ namespace LMPWebService.Services
             if (entityMessage == null)
             {
                 _logger.LogError($"[SendStatusService] Message ({messageID}) was not found in OuterMessage table", messageID);
-                return;
+                return false;
             }
 
             try
@@ -59,11 +60,12 @@ namespace LMPWebService.Services
                 if (statusResponse == null || !statusResponse.is_success)
                 {
                     LogAndUpdateErrorStatus(entityMessage, statusResponse?.error ?? "Unknown error");
-                    return;
+                    return false;
                 }
 
                 await UpdateMessageSuccessStatus(entityMessage);
                 _logger.LogInformation("Для лида id {MessageId} успешно обновлен статус Взят в работу и проставлен ответственный сотрудник {ResponsibleName}", entityMessage.MessageOuter_ID, responsibleName);
+                return true;
             }
             catch (Exception e)
             {
@@ -73,6 +75,7 @@ namespace LMPWebService.Services
 
                 _logger.LogError(errorMes);
                 await UpdateMessageErrorStatus(entityMessage, errorMes);
+                return false;
             }
         }
 

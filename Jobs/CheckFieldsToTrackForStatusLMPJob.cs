@@ -69,12 +69,8 @@ namespace LeadsSaver_RabbitMQ.Jobs
 
                         if (pendingMessage.FieldName == "ResponsibleUserName")
                         {
-                            if (Guid.TryParse(pendingMessage.FieldContent, out var responsibleID))
-                            {
-                                var responsible_user = await _dbContext.DictBase.FirstOrDefaultAsync(x => x.DictBase_ID == responsibleID);
-                                await _sendStatusService.SendStatusResponsibleAsync(lead.OuterMessage_ID, outletCode: outlet_code, responsibleName: responsible_user?.DictBaseName);
-                                _logger.LogInformation($"[CheckFieldsToTrackForStatusLMPJob] Сообщение ({lead.OuterMessage_ID}) с outlet_code {outlet_code} и responsibleUser_ID {pendingMessage?.FieldContent} ({responsible_user?.DictBaseName}) было успешно получено и передано на отправку статуса взятие в работу");
-                            }
+                            await _sendStatusService.SendStatusResponsibleAsync(lead.OuterMessage_ID, outletCode: outlet_code, responsibleName: pendingMessage?.FieldContent);
+                            _logger.LogInformation($"[CheckFieldsToTrackForStatusLMPJob] Сообщение ({lead.OuterMessage_ID}) с outlet_code {outlet_code} и responsibleUser_ID {pendingMessage?.FieldContent} было успешно получено и передано на отправку статуса взятие в работу");
                         }
                     }
                     catch (Exception ex)

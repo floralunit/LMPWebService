@@ -45,7 +45,7 @@ public class AstraDbContext : DbContext
         modelBuilder.Entity<FieldsToTrackForStatus_LMP>(entity =>
         {
             entity
-                .ToTable("FieldsToTrackForStatus_LMP", "dbo")
+                .ToTable("FieldsToTrackForStatus_LMP", "stella")
                 .HasKey(b => b.EMessage_ID);
 
         });

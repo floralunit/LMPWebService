@@ -39,7 +39,7 @@ public class LeadsServiceJobScheduler : IHostedService
             .WithIdentity($"checkResponsibleJob", "groupCheckResponsibleJob")
             .StartNow()
             //.WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromMinutes(30)).RepeatForever())
-            .WithCronSchedule("0 0 6-21 ? * * *", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
+            .WithCronSchedule("0 0/5 6-21 ? * * *", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
             .Build();
 
         await _scheduler.ScheduleJob(job1, trigger1, cancellationToken);

@@ -135,8 +135,11 @@ namespace LMPWebService.Services
         {
             try
             {
+
                 var json = JsonSerializer.Serialize(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _logger.LogInformation($"[SendStatusAsync] Попытка отправки статуса json: {json}");
 
                 var token = await GetAccessTokenAsync(request.lead_id, outlet_code);
                 if (token == null)

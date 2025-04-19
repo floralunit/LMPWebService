@@ -80,7 +80,7 @@ builder.Services.AddQuartzHostedService(options =>
     options.WaitForJobsToComplete = true;
 });
 builder.Services.AddScoped<CheckErrorLeadsJob>();
-builder.Services.AddScoped<CheckResponsibleJob>();
+builder.Services.AddScoped<CheckFieldsToTrackForStatusLMPJob>();
 
 
 builder.Services.AddSingleton<IJobFactory, ScopedJobFactory>();

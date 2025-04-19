@@ -8,7 +8,8 @@ public class AstraDbContext : DbContext
     public DbSet<OuterMessageReader> OuterMessageReader { get; set; }
     public DbSet<OuterMessage> OuterMessage { get; set; }
     public DbSet<EMessage> EMessage { get; set; }
-    public DbSet<EMessageResponsibleWorker> EMessageResponsibleWorker { get; set; }
+    public DbSet<FieldsToTrackForStatus_LMP> FieldsToTrackForStatus_LMP { get; set; }
+    public DbSet<DictBase> DictBase { get; set; }
     public DbSet<DocumentBase> DocumentBase { get; set; }
     public DbSet<DocumentBaseParent> DocumentBaseParent { get; set; }
     public DbSet<WorkOrder> WorkOrder { get; set; }
@@ -41,11 +42,18 @@ public class AstraDbContext : DbContext
                 .HasKey(b => b.EMessage_ID);
 
         });
-        modelBuilder.Entity<EMessageResponsibleWorker>(entity =>
+        modelBuilder.Entity<FieldsToTrackForStatus_LMP>(entity =>
         {
             entity
-                .ToTable("EMessageResponsibleWorker", "dbo")
+                .ToTable("FieldsToTrackForStatus_LMP", "dbo")
                 .HasKey(b => b.EMessage_ID);
+
+        });
+        modelBuilder.Entity<DictBase>(entity =>
+        {
+            entity
+                .ToTable("DictBase", "dbo")
+                .HasKey(b => b.DictBase_ID);
 
         });
         modelBuilder.Entity<DocumentBase>(entity =>

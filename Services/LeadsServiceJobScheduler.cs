@@ -30,7 +30,7 @@ public class LeadsServiceJobScheduler : IHostedService
 
         await _scheduler.ScheduleJob(job2, trigger2, cancellationToken);
 
-        var job1 = JobBuilder.Create<CheckResponsibleJob>()
+        var job1 = JobBuilder.Create<CheckFieldsToTrackForStatusLMPJob>()
             .WithIdentity($"checkResponsibleJob", "groupCheckResponsibleJob")
             .UsingJobData("test", "test")
             .Build();

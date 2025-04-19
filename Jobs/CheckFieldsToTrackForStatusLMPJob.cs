@@ -4,19 +4,20 @@ using Quartz;
 using System.Data;
 using Newtonsoft.Json;
 using LMPWebService.Services;
+using System.Net.WebSockets;
 
 namespace LeadsSaver_RabbitMQ.Jobs
 {
     [DisallowConcurrentExecution]
-    public class CheckResponsibleJob : IJob
+    public class CheckFieldsToTrackForStatusLMPJob : IJob
     {
-        private readonly ILogger<CheckResponsibleJob> _logger;
+        private readonly ILogger<CheckFieldsToTrackForStatusLMPJob> _logger;
         private readonly AstraDbContext _dbContext;
 
         private readonly ISendStatusService _sendStatusService;
 
-        public CheckResponsibleJob(
-                                ILogger<CheckResponsibleJob> logger,
+        public CheckFieldsToTrackForStatusLMPJob(
+                                ILogger<CheckFieldsToTrackForStatusLMPJob> logger,
                                 AstraDbContext dbContext,
                                 ISendStatusService sendStatusService)
         {
@@ -33,59 +34,55 @@ namespace LeadsSaver_RabbitMQ.Jobs
 
             try
             {
-                var pendingMessages = await _dbContext.EMessageResponsibleWorker
+                var pendingMessages = await _dbContext.FieldsToTrackForStatus_LMP
                     .Where(x => !x.SendStatus)
+                    .OrderByDescending(x => x.InsDate)
                     .ToListAsync();
 
                 if (!pendingMessages.Any())
                 {
-                    _logger.LogInformation("[CheckResponsibleJob] Нет сообщений со статусом 0 для обработки.");
+                    _logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений со статусом 0 для обработки.");
                     return;
                 }
 
-                foreach (var eMessage in pendingMessages)
+                foreach (var pendingMessage in pendingMessages)
                 {
                     try
                     {
                         var lead = await _dbContext.OuterMessage
-                            .FirstOrDefaultAsync(x => x.OuterMessage_ID == eMessage.OuterMessage_ID);
+                            .FirstOrDefaultAsync(x => x.OuterMessage_ID == pendingMessage.OuterMessage_ID);
 
                         if (lead == null)
                         {
-                            _logger.LogWarning($"[CheckResponsibleJob] Не найдена запись OuterMessage с ID {eMessage.OuterMessage_ID}");
+                            _logger.LogWarning($"[CheckFieldsToTrackForStatusLMPJob] Не найдена запись OuterMessage с ID {pendingMessage.OuterMessage_ID}");
                             continue;
                         }
 
-                        var jsonRecord = lead.MessageText;
-                        var jsonObject = JsonConvert.DeserializeObject<dynamic>(jsonRecord);
-                        string outlet_code;
-
-                        var leadinfo = jsonObject?.lead_info;
-                        if (leadinfo != null)
-                        {
-                            outlet_code = leadinfo.outlet_code.ToString();
-                        }
-                        else
-                        {
-                            outlet_code = jsonObject?.outlet_code?.ToString();
-                        }
+                        var reader = await _dbContext.OuterMessageReader.FirstOrDefaultAsync(x => x.OuterMessageReader_ID == lead.OuterMessageReader_ID);
+                        var outlet_code = reader?.OuterMessageSourceName;
 
                         if (string.IsNullOrEmpty(outlet_code))
                         {
-                            _logger.LogWarning($"[CheckResponsibleJob] Не удалось извлечь outlet_code для сообщения {eMessage.OuterMessage_ID}");
+                            _logger.LogWarning($"[CheckFieldsToTrackForStatusLMPJob] Не удалось извлечь outlet_code для сообщения {pendingMessage.OuterMessage_ID}");
                             continue;
                         }
 
-                        var centerCode = outlet_code.Length >= 5 ? outlet_code.Substring(0, 5) : outlet_code;
-                        await _sendStatusService.SendStatusResponsibleAsync(lead.OuterMessage_ID, outletCode: centerCode, responsibleName: eMessage?.ResponsibleName);
-                        _logger.LogInformation($"[CheckResponsibleJob] Сообщение ({lead.OuterMessage_ID}) с outlet_code {centerCode} и responsibleName {eMessage?.ResponsibleName} было успешно получено и передано на отправку статуса взятие в работу");
+                        if (pendingMessage.FieldName == "ResponsibleUser_ID")
+                        {
+                            if (Guid.TryParse(pendingMessage.FieldContent, out var responsibleID))
+                            {
+                                var responsible_user = await _dbContext.DictBase.FirstOrDefaultAsync(x => x.DictBase_ID == responsibleID);
+                                await _sendStatusService.SendStatusResponsibleAsync(lead.OuterMessage_ID, outletCode: outlet_code, responsibleName: responsible_user?.DictBaseName);
+                                _logger.LogInformation($"[CheckFieldsToTrackForStatusLMPJob] Сообщение ({lead.OuterMessage_ID}) с outlet_code {outlet_code} и responsibleUser_ID {pendingMessage?.FieldContent} ({responsible_user?.DictBaseName}) было успешно получено и передано на отправку статуса взятие в работу");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"[CheckResponsibleJob] Ошибка обработки сообщения {eMessage.OuterMessage_ID}: {ex.Message}");
+                        _logger.LogError($"[CheckFieldsToTrackForStatusLMPJob] Ошибка обработки сообщения {pendingMessage.OuterMessage_ID}: {ex.Message}");
 
                         var lead = await _dbContext.OuterMessage
-                            .FirstOrDefaultAsync(x => x.OuterMessage_ID == eMessage.OuterMessage_ID);
+                            .FirstOrDefaultAsync(x => x.OuterMessage_ID == pendingMessage.OuterMessage_ID);
 
                         if (lead != null)
                         {
@@ -99,7 +96,7 @@ namespace LeadsSaver_RabbitMQ.Jobs
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка в CheckResponsibleJob: {ex.Message}");
+                _logger.LogError($"Ошибка в CheckFieldsToTrackForStatusLMPJob: {ex.Message}");
                 throw;
             }
 

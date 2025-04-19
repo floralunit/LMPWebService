@@ -20,94 +20,6 @@ namespace LMPWebService.Services
         private readonly IOuterMessageService _messageService;
         private readonly AstraDbContext _dbContext;
 
-        // Статические коллекции для хранения GUID-ов статусов
-        private static readonly HashSet<Guid> ClientRefusalStatuses = new()
-        {
-            Guid.Parse("00067AD7-0C2C-4E12-9E93-0AF4209C6560"),
-            Guid.Parse("6E2943A8-E39E-46D5-B3DC-48C0660C34E1"),
-            Guid.Parse("5DEF2C8A-5368-46A0-AFCB-B52CB9469AED"),
-            Guid.Parse("435AD73D-EEA4-40A4-8661-C3221A15838C"),
-            Guid.Parse("9B0ECD9A-6C49-4E0D-AB24-1BA63DCD61B1"),
-            Guid.Parse("A991C140-FC9D-469F-8762-251BD3F39DE9"),
-            Guid.Parse("C7F889BF-B2F3-4465-9C82-52879B2E3DCD"),
-            Guid.Parse("1DB9E974-CE6E-4B68-8F0D-C7622A97C4D7"),
-            Guid.Parse("6F506864-84B0-4034-A2DB-8FD45DEEA03B"),
-            Guid.Parse("D4DAF335-A207-4A49-9565-4B9FCB31ACA6"),
-            Guid.Parse("E3C13503-C8A5-4784-857A-BD2BCE234C2F"),
-            Guid.Parse("85B5ECB3-2486-4C2F-9DB6-E59DDBED1FE9"),
-            Guid.Parse("10079B2B-6F64-44C5-B1F4-2530BBA29E79"),
-            Guid.Parse("BF0D002A-3A58-4F3D-B310-8320BD767B48"),
-            Guid.Parse("94D68B48-B848-4039-BC0E-AE263D770FB6"),
-            Guid.Parse("0F1D0775-D275-4186-B860-3B180749C580")
-        };
-
-        private static readonly HashSet<Guid> DeletedStatuses = new()
-        {
-            Guid.Parse("3BA296B9-B730-4A63-9A42-240DB794BC27"),
-            Guid.Parse("3CAF1D89-BD6A-4E8E-BE74-2F0A85A377AF"),
-            Guid.Parse("34694844-1D0E-49A5-89CD-83C2585249BC"),
-            Guid.Parse("DABE815D-ECA0-4C7D-87C8-AE482485893F"),
-            Guid.Parse("F7F9ADEE-D71B-42E2-8EAB-EFADE1A47ECC"),
-            Guid.Parse("AEFD9D1C-FF5D-469C-8A09-9C1C45987D43"),
-            Guid.Parse("6AF78A95-68E0-44E3-B258-AEFAC1F5516B"),
-            Guid.Parse("84166577-1670-4FDE-B4EB-E15B7D891F84"),
-            Guid.Parse("8CE97943-D26A-44AC-84FB-FB3222B3058D"),
-            Guid.Parse("0019DF69-F055-46A0-A5E1-ECF324044743")
-        };
-
-        private static readonly HashSet<Guid> CompletedStatuses = new()
-        {
-            Guid.Parse("331F0156-81CA-427F-B048-5C0EF177FBEF"),
-            Guid.Parse("A4DBB71A-4A40-4C1B-9C67-E85225A5B2CB"),
-            Guid.Parse("7E8AFF0A-ABA6-4020-A6E5-0A15BF16013A"),
-            Guid.Parse("C43A12F8-3DDB-478B-8704-2521AA8AEABA"),
-            Guid.Parse("77634514-E9F8-489C-B263-41E80145576B"),
-            Guid.Parse("9A40C4D0-BDB7-410E-B8C6-4D80D11F280E"),
-            Guid.Parse("68A3FCDC-BFFA-48D7-B6A9-76A63E09E8A8"),
-            Guid.Parse("481F78A6-C6FF-4C8B-9D27-DF01A32D2747"),
-            Guid.Parse("5824B6EF-1F7B-4D13-BBC3-EB9AAA29A99D"),
-            Guid.Parse("994D1BE2-6017-4710-82E9-FAE34113B987"),
-            Guid.Parse("479C8007-CFB3-4BD5-8091-0FFFFAF4EF26"),
-            Guid.Parse("9D0737F2-2C5E-427B-8A23-38D268B7D098"),
-            Guid.Parse("E78CD57D-EFEB-4528-80D3-3D5AF3E19E40"),
-            Guid.Parse("68CB0EAE-FCC3-4F66-AF79-868AEDA93FE8"),
-            Guid.Parse("B1E3783E-D623-4C80-A605-085943CCD66F"),
-            Guid.Parse("5D939990-17EF-4156-8B0B-0BAC40620CCA"),
-            Guid.Parse("AFCA17A0-4B37-4547-A682-29C824565547"),
-            Guid.Parse("046D890C-868C-42F6-B4B6-4B7B3783E845"),
-            Guid.Parse("0CE8F7ED-E2F0-4631-945C-522C4D72F18E"),
-            Guid.Parse("1CCC4606-658F-4E3E-8751-59167F8B6ACC"),
-            Guid.Parse("E708E919-4F91-46C9-ADE9-67F6796A00D6"),
-            Guid.Parse("92C54053-0231-4BA5-8834-70995027EAA3"),
-            Guid.Parse("253E70B3-D19D-4F9B-A16C-734F0E9E63DA"),
-            Guid.Parse("C3B1C515-822C-4BBB-9D1F-9C9B9A49291D"),
-            Guid.Parse("7528EB63-B2C1-4362-A2E7-FF7BE63E85F6"),
-            Guid.Parse("953E0C1F-72DF-48CA-A0FF-41381560D779"),
-            Guid.Parse("EC7CF217-59D1-4DEB-A0F7-46E7DC11CF4D"),
-            Guid.Parse("6FEFC6F4-3040-4088-B979-6A56E955F21E"),
-            Guid.Parse("96EB5686-46F2-4FF3-98D2-B474AC87B12A"),
-            Guid.Parse("64255ABD-A089-4DC5-ACBA-4EBA6757F962"),
-            Guid.Parse("8E22840E-D345-4B34-8D97-120DD143296D"),
-            Guid.Parse("5D42CBE4-CD8D-4102-9194-FB71766A4D43")
-        };
-
-        private static readonly HashSet<Guid> NotCompletedStatuses = new()
-        {
-            Guid.Parse("BDA4231D-6488-407A-8FDB-0EDBD9DEBBE7"),
-            Guid.Parse("91A20A66-EC6D-4DCB-A199-E250604753B6"),
-            Guid.Parse("B5D9C721-71F8-4F79-840C-7915AF250A10"),
-            Guid.Parse("F70A167C-43AA-49EB-BF75-B06225322630")
-        };
-
-        private static readonly HashSet<Guid> PlannedStatuses = new()
-        {
-            Guid.Parse("7CC17A21-2E18-4442-B971-028A5F73172B"),
-            Guid.Parse("FD5248E1-5014-4ABF-9F61-60B247495909"),
-            Guid.Parse("D0CDF996-D3AF-4A0F-A353-EB7BCA19F7C6"),
-            Guid.Parse("8391C0AF-F11E-4CA3-A6E3-03DA4C07CB46"),
-            Guid.Parse("575AC02F-E1BF-4C49-B57D-94BEB03E2232")
-        };
-
         private static readonly HashSet<int> AllowedDocTypeIds = new() { 140, 57, 56, 1 };
 
         public SendStatusService(
@@ -125,10 +37,10 @@ namespace LMPWebService.Services
         public async Task SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName)
         {
             if (string.IsNullOrWhiteSpace(outletCode))
-                throw new ArgumentException("Outlet code cannot be null or empty", nameof(outletCode));
+                throw new ArgumentException("[SendStatusService] Outlet code cannot be null or empty", nameof(outletCode));
 
             if (string.IsNullOrWhiteSpace(responsibleName))
-                throw new ArgumentException("Responsible name cannot be null or empty", nameof(responsibleName));
+                throw new ArgumentException("[SendStatusService] Responsible name cannot be null or empty", nameof(responsibleName));
 
             var entityMessage = await _messageService.FindMessageAsync(messageID);
             if (entityMessage == null)
@@ -151,7 +63,7 @@ namespace LMPWebService.Services
                 }
 
                 await UpdateMessageSuccessStatus(entityMessage);
-                _logger.LogInformation("Для лида id {MessageId} успешно обновлен статус Взят в работу", entityMessage.MessageOuter_ID);
+                _logger.LogInformation("Для лида id {MessageId} успешно обновлен статус Взят в работу и проставлен ответственный сотрудник {ResponsibleName}", entityMessage.MessageOuter_ID, responsibleName);
             }
             catch (Exception e)
             {
@@ -172,6 +84,7 @@ namespace LMPWebService.Services
             var docID = message.astra_document_id;
             var statusID = message.astra_document_status_id;
             var docTypeID = message.astra_document_subtype_id;
+            var responsibleUserID = message.upd_application_user_id;
 
             _logger.LogInformation($"[SendStatusService] Получено сообщение на обработку статуса emessage = {docID}, docTypeID={docTypeID}, statusID={statusID}");
 
@@ -344,7 +257,8 @@ namespace LMPWebService.Services
 
                 if (statusToSend != -1 && lead != null)
                 {
-                    statusDTO.responsible_user = message.responsible_user;
+                    var responsible_user = await _dbContext.DictBase.FirstOrDefaultAsync(x => x.DictBase_ID == responsibleUserID);
+                    statusDTO.responsible_user = responsible_user?.DictBaseName;
                     await SendLeadStatus(lead, statusToSend, statusDTO, docID, docTypeID, statusID);
                 }
             }
@@ -742,5 +656,93 @@ namespace LMPWebService.Services
                           select e)
                    .FirstOrDefaultAsync();
         }
+
+        // Статические коллекции для хранения GUID-ов статусов
+        private static readonly HashSet<Guid> ClientRefusalStatuses = new()
+        {
+            Guid.Parse("00067AD7-0C2C-4E12-9E93-0AF4209C6560"),
+            Guid.Parse("6E2943A8-E39E-46D5-B3DC-48C0660C34E1"),
+            Guid.Parse("5DEF2C8A-5368-46A0-AFCB-B52CB9469AED"),
+            Guid.Parse("435AD73D-EEA4-40A4-8661-C3221A15838C"),
+            Guid.Parse("9B0ECD9A-6C49-4E0D-AB24-1BA63DCD61B1"),
+            Guid.Parse("A991C140-FC9D-469F-8762-251BD3F39DE9"),
+            Guid.Parse("C7F889BF-B2F3-4465-9C82-52879B2E3DCD"),
+            Guid.Parse("1DB9E974-CE6E-4B68-8F0D-C7622A97C4D7"),
+            Guid.Parse("6F506864-84B0-4034-A2DB-8FD45DEEA03B"),
+            Guid.Parse("D4DAF335-A207-4A49-9565-4B9FCB31ACA6"),
+            Guid.Parse("E3C13503-C8A5-4784-857A-BD2BCE234C2F"),
+            Guid.Parse("85B5ECB3-2486-4C2F-9DB6-E59DDBED1FE9"),
+            Guid.Parse("10079B2B-6F64-44C5-B1F4-2530BBA29E79"),
+            Guid.Parse("BF0D002A-3A58-4F3D-B310-8320BD767B48"),
+            Guid.Parse("94D68B48-B848-4039-BC0E-AE263D770FB6"),
+            Guid.Parse("0F1D0775-D275-4186-B860-3B180749C580")
+        };
+
+        private static readonly HashSet<Guid> DeletedStatuses = new()
+        {
+            Guid.Parse("3BA296B9-B730-4A63-9A42-240DB794BC27"),
+            Guid.Parse("3CAF1D89-BD6A-4E8E-BE74-2F0A85A377AF"),
+            Guid.Parse("34694844-1D0E-49A5-89CD-83C2585249BC"),
+            Guid.Parse("DABE815D-ECA0-4C7D-87C8-AE482485893F"),
+            Guid.Parse("F7F9ADEE-D71B-42E2-8EAB-EFADE1A47ECC"),
+            Guid.Parse("AEFD9D1C-FF5D-469C-8A09-9C1C45987D43"),
+            Guid.Parse("6AF78A95-68E0-44E3-B258-AEFAC1F5516B"),
+            Guid.Parse("84166577-1670-4FDE-B4EB-E15B7D891F84"),
+            Guid.Parse("8CE97943-D26A-44AC-84FB-FB3222B3058D"),
+            Guid.Parse("0019DF69-F055-46A0-A5E1-ECF324044743")
+        };
+
+        private static readonly HashSet<Guid> CompletedStatuses = new()
+        {
+            Guid.Parse("331F0156-81CA-427F-B048-5C0EF177FBEF"),
+            Guid.Parse("A4DBB71A-4A40-4C1B-9C67-E85225A5B2CB"),
+            Guid.Parse("7E8AFF0A-ABA6-4020-A6E5-0A15BF16013A"),
+            Guid.Parse("C43A12F8-3DDB-478B-8704-2521AA8AEABA"),
+            Guid.Parse("77634514-E9F8-489C-B263-41E80145576B"),
+            Guid.Parse("9A40C4D0-BDB7-410E-B8C6-4D80D11F280E"),
+            Guid.Parse("68A3FCDC-BFFA-48D7-B6A9-76A63E09E8A8"),
+            Guid.Parse("481F78A6-C6FF-4C8B-9D27-DF01A32D2747"),
+            Guid.Parse("5824B6EF-1F7B-4D13-BBC3-EB9AAA29A99D"),
+            Guid.Parse("994D1BE2-6017-4710-82E9-FAE34113B987"),
+            Guid.Parse("479C8007-CFB3-4BD5-8091-0FFFFAF4EF26"),
+            Guid.Parse("9D0737F2-2C5E-427B-8A23-38D268B7D098"),
+            Guid.Parse("E78CD57D-EFEB-4528-80D3-3D5AF3E19E40"),
+            Guid.Parse("68CB0EAE-FCC3-4F66-AF79-868AEDA93FE8"),
+            Guid.Parse("B1E3783E-D623-4C80-A605-085943CCD66F"),
+            Guid.Parse("5D939990-17EF-4156-8B0B-0BAC40620CCA"),
+            Guid.Parse("AFCA17A0-4B37-4547-A682-29C824565547"),
+            Guid.Parse("046D890C-868C-42F6-B4B6-4B7B3783E845"),
+            Guid.Parse("0CE8F7ED-E2F0-4631-945C-522C4D72F18E"),
+            Guid.Parse("1CCC4606-658F-4E3E-8751-59167F8B6ACC"),
+            Guid.Parse("E708E919-4F91-46C9-ADE9-67F6796A00D6"),
+            Guid.Parse("92C54053-0231-4BA5-8834-70995027EAA3"),
+            Guid.Parse("253E70B3-D19D-4F9B-A16C-734F0E9E63DA"),
+            Guid.Parse("C3B1C515-822C-4BBB-9D1F-9C9B9A49291D"),
+            Guid.Parse("7528EB63-B2C1-4362-A2E7-FF7BE63E85F6"),
+            Guid.Parse("953E0C1F-72DF-48CA-A0FF-41381560D779"),
+            Guid.Parse("EC7CF217-59D1-4DEB-A0F7-46E7DC11CF4D"),
+            Guid.Parse("6FEFC6F4-3040-4088-B979-6A56E955F21E"),
+            Guid.Parse("96EB5686-46F2-4FF3-98D2-B474AC87B12A"),
+            Guid.Parse("64255ABD-A089-4DC5-ACBA-4EBA6757F962"),
+            Guid.Parse("8E22840E-D345-4B34-8D97-120DD143296D"),
+            Guid.Parse("5D42CBE4-CD8D-4102-9194-FB71766A4D43")
+        };
+
+        private static readonly HashSet<Guid> NotCompletedStatuses = new()
+        {
+            Guid.Parse("BDA4231D-6488-407A-8FDB-0EDBD9DEBBE7"),
+            Guid.Parse("91A20A66-EC6D-4DCB-A199-E250604753B6"),
+            Guid.Parse("B5D9C721-71F8-4F79-840C-7915AF250A10"),
+            Guid.Parse("F70A167C-43AA-49EB-BF75-B06225322630")
+        };
+
+        private static readonly HashSet<Guid> PlannedStatuses = new()
+        {
+            Guid.Parse("7CC17A21-2E18-4442-B971-028A5F73172B"),
+            Guid.Parse("FD5248E1-5014-4ABF-9F61-60B247495909"),
+            Guid.Parse("D0CDF996-D3AF-4A0F-A353-EB7BCA19F7C6"),
+            Guid.Parse("8391C0AF-F11E-4CA3-A6E3-03DA4C07CB46"),
+            Guid.Parse("575AC02F-E1BF-4C49-B57D-94BEB03E2232")
+        };
     }
 }

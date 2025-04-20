@@ -30,60 +30,66 @@ namespace LeadsSaver_RabbitMQ.Jobs
         {
             try
             {
-                var pendingMessages = await GetPendingMessagesAsync();
+                var pendingMessages = await _dbContext.FieldsToTrackForStatus_LMP
+                                            .Where(x => !x.SendStatus)
+                                            .OrderByDescending(x => x.InsDate)
+                                            .AsNoTracking()
+                                            .ToListAsync();
                 if (!pendingMessages.Any())
                 {
                     _logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений для обработки");
                     return;
                 }
 
-                await ProcessMessagesAsync(pendingMessages);
+                foreach (var pendingMessage in pendingMessages)
+                {
+                    try
+                    {
+                        var lead = await _dbContext.OuterMessage
+                            .FirstOrDefaultAsync(x => x.OuterMessage_ID == pendingMessage.OuterMessage_ID);
+
+                        if (lead == null)
+                        {
+                            LogErrorAndContinue($"Не найдена запись OuterMessage с ID {pendingMessage.OuterMessage_ID}");
+                            continue;
+                        }
+
+                        var outletCode = await GetOutletCodeAsync(lead.OuterMessageReader_ID);
+                        if (string.IsNullOrEmpty(outletCode))
+                        {
+                            LogErrorAndContinue($"Не удалось извлечь outlet_code для сообщения {pendingMessage.OuterMessage_ID}");
+                            continue;
+                        }
+
+                        switch (pendingMessage.FieldName)
+                        {
+                            case "ResponsibleUserName":
+                                await ProcessResponsibleUserUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
+                                break;
+
+                            case "DateReception":
+                                await ProcessDateReceptionUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
+                                break;
+
+                            default:
+                                _logger.LogWarning($"Неизвестное поле для обновления: {pendingMessage.FieldName}");
+                                break;
+                        }
+
+                        pendingMessage.SendStatus = true;
+                        await _dbContext.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Ошибка обработки сообщения {pendingMessage.OuterMessage_ID}");
+                        await UpdateLeadErrorStatusAsync(pendingMessage.OuterMessage_ID.Value, ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка в CheckFieldsToTrackForStatusLMPJob");
                 throw;
-            }
-        }
-
-        private async Task<List<FieldsToTrackForStatus_LMP>> GetPendingMessagesAsync()
-        {
-            return await _dbContext.FieldsToTrackForStatus_LMP
-                .Where(x => !x.SendStatus)
-                .OrderByDescending(x => x.InsDate)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
-        private async Task ProcessMessagesAsync(List<FieldsToTrackForStatus_LMP> pendingMessages)
-        {
-            foreach (var pendingMessage in pendingMessages)
-            {
-                try
-                {
-                    var lead = await _dbContext.OuterMessage
-                        .FirstOrDefaultAsync(x => x.OuterMessage_ID == pendingMessage.OuterMessage_ID);
-
-                    if (lead == null)
-                    {
-                        LogErrorAndContinue($"Не найдена запись OuterMessage с ID {pendingMessage.OuterMessage_ID}");
-                        continue;
-                    }
-
-                    var outletCode = await GetOutletCodeAsync(lead.OuterMessageReader_ID);
-                    if (string.IsNullOrEmpty(outletCode))
-                    {
-                        LogErrorAndContinue($"Не удалось извлечь outlet_code для сообщения {pendingMessage.OuterMessage_ID}");
-                        continue;
-                    }
-
-                    await ProcessFieldUpdateAsync(pendingMessage, lead, outletCode);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Ошибка обработки сообщения {pendingMessage.OuterMessage_ID}");
-                    await UpdateLeadErrorStatusAsync(pendingMessage.OuterMessage_ID.Value, ex.Message);
-                }
             }
         }
 
@@ -93,31 +99,10 @@ namespace LeadsSaver_RabbitMQ.Jobs
 
             var reader = await _dbContext.OuterMessageReader
                 .Where(x => x.OuterMessageReader_ID == outerMessageReaderId)
-                .Select(x => x.OuterMessageSourceName)
+                .Select(x => x.OuterMessageReaderName)
                 .FirstOrDefaultAsync();
 
             return reader;
-        }
-
-        private async Task ProcessFieldUpdateAsync(FieldsToTrackForStatus_LMP pendingMessage, OuterMessage lead, string outletCode)
-        {
-            switch (pendingMessage.FieldName)
-            {
-                case "ResponsibleUserName":
-                    await ProcessResponsibleUserUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
-                    break;
-
-                case "DateReception":
-                    await ProcessDateReceptionUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
-                    break;
-
-                default:
-                    _logger.LogWarning($"Неизвестное поле для обновления: {pendingMessage.FieldName}");
-                    break;
-            }
-
-            pendingMessage.SendStatus = true;
-            await _dbContext.SaveChangesAsync();
         }
 
         private async Task ProcessResponsibleUserUpdateAsync(OuterMessage lead, string outletCode, string responsibleName)

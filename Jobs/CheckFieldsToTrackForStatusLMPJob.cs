@@ -33,7 +33,6 @@ namespace LeadsSaver_RabbitMQ.Jobs
                 var pendingMessages = await _dbContext.FieldsToTrackForStatus_LMP
                                             .Where(x => !x.SendStatus)
                                             .OrderByDescending(x => x.InsDate)
-                                            .AsNoTracking()
                                             .ToListAsync();
                 if (!pendingMessages.Any())
                 {

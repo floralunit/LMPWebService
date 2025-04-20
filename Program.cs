@@ -71,7 +71,13 @@ builder.Services.AddMassTransit(cfg =>
             x.ExchangeType = "fanout";
             x.Durable = true;
         });
+
+        // Отключаем телеметрию
+        busCfg.ConfigureEndpoints(context);
     });
+
+    // Отключаем телеметрию глобально
+    cfg.AddTelemetryListener(false);
 });
 builder.Services.AddHostedService<BusService>();
 

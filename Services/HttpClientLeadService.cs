@@ -9,7 +9,6 @@ using LMPWebService.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using YourNamespace.Dtos;
-using static LMPWebService.Services.HttpClientLeadService;
 
 namespace LMPWebService.Services
 {

@@ -9,7 +9,6 @@ namespace LMPWebService.Services
 {
     public interface ISendStatusService
     {
-        Task<bool> SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName);
         Task SendStatusAsync(RabbitMQStatusMessage_LMP message);
     }
 
@@ -33,50 +32,6 @@ namespace LMPWebService.Services
             _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
-        }
-
-        public async Task<bool> SendStatusResponsibleAsync(Guid messageID, string outletCode, string responsibleName)
-        {
-            if (string.IsNullOrWhiteSpace(outletCode))
-                throw new ArgumentException("[SendStatusService] Outlet code cannot be null or empty", nameof(outletCode));
-
-            if (string.IsNullOrWhiteSpace(responsibleName))
-                throw new ArgumentException("[SendStatusService] Responsible name cannot be null or empty", nameof(responsibleName));
-
-            var entityMessage = await _messageService.FindMessageAsync(messageID);
-            if (entityMessage == null)
-            {
-                _logger.LogError($"[SendStatusService] Message ({messageID}) was not found in OuterMessage table", messageID);
-                return false;
-            }
-
-            try
-            {
-                var statusResponse = await _httpClientLeadService.SendStatusResponsibleAsync(
-                    messageID.ToString(),
-                    outletCode,
-                    responsibleName);
-
-                if (statusResponse == null || !statusResponse.is_success)
-                {
-                    LogAndUpdateErrorStatus(entityMessage, statusResponse?.error ?? "Unknown error");
-                    return false;
-                }
-
-                await UpdateMessageSuccessStatus(entityMessage);
-                _logger.LogInformation("Для лида id {MessageId} успешно обновлен статус Взят в работу и проставлен ответственный сотрудник {ResponsibleName}", entityMessage.MessageOuter_ID, responsibleName);
-                return true;
-            }
-            catch (Exception e)
-            {
-                var errorMes = $"[SendStatusService] Error processing messageId={messageID}: {e.Message}";
-                if (e.InnerException != null)
-                    errorMes += $"\nInnerException: {e.InnerException.Message}";
-
-                _logger.LogError(errorMes);
-                await UpdateMessageErrorStatus(entityMessage, errorMes);
-                return false;
-            }
         }
 
         public async Task SendStatusAsync(RabbitMQStatusMessage_LMP message)

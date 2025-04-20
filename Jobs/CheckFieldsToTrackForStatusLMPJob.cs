@@ -34,11 +34,11 @@ namespace LeadsSaver_RabbitMQ.Jobs
                                             .Where(x => !x.SendStatus)
                                             .OrderByDescending(x => x.InsDate)
                                             .ToListAsync();
-                if (!pendingMessages.Any())
-                {
-                    _logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений для обработки");
-                    return;
-                }
+                //if (!pendingMessages.Any())
+                //{
+                //    _logger.LogInformation("[CheckFieldsToTrackForStatusLMPJob] Нет сообщений для обработки");
+                //    return;
+                //}
 
                 foreach (var pendingMessage in pendingMessages)
                 {
@@ -60,23 +60,26 @@ namespace LeadsSaver_RabbitMQ.Jobs
                             continue;
                         }
 
-                        switch (pendingMessage.FieldName)
+                        bool isProcessed = false;
+
+                        if (pendingMessage.FieldName == "ResponsibleUserName")
                         {
-                            case "ResponsibleUserName":
-                                await ProcessResponsibleUserUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
-                                break;
-
-                            case "DateReception":
-                                await ProcessDateReceptionUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
-                                break;
-
-                            default:
-                                _logger.LogWarning($"Неизвестное поле для обновления: {pendingMessage.FieldName}");
-                                break;
+                            isProcessed = await ProcessResponsibleUserUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
+                        }
+                        else if (pendingMessage.FieldName == "DateReception")
+                        {
+                            isProcessed = await ProcessDateReceptionUpdateAsync(lead, outletCode, pendingMessage.FieldContent);
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Неизвестное поле для обновления: {pendingMessage.FieldName}");
                         }
 
-                        pendingMessage.SendStatus = true;
-                        await _dbContext.SaveChangesAsync();
+                        if (isProcessed)
+                        {
+                            pendingMessage.SendStatus = true;
+                            await _dbContext.SaveChangesAsync();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -104,48 +107,66 @@ namespace LeadsSaver_RabbitMQ.Jobs
             return reader;
         }
 
-        private async Task ProcessResponsibleUserUpdateAsync(OuterMessage lead, string outletCode, string responsibleName)
+        private async Task<bool> ProcessResponsibleUserUpdateAsync(OuterMessage lead, string outletCode, string responsibleName)
         {
-            var statusResponse = await _httpClientLeadService.SendStatusResponsibleAsync(
-                lead.OuterMessage_ID.ToString(),
-                outletCode,
-                responsibleName);
-
-            if (statusResponse == null || !statusResponse.is_success)
+            try
             {
-                var errorMessage = $"Ошибка отправки статуса о взятии в работу для ({lead.OuterMessage_ID}) с outlet_code {outletCode}: {statusResponse?.error}";
-                throw new Exception(errorMessage);
-            }
+                var statusResponse = await _httpClientLeadService.SendStatusResponsibleAsync(
+                    lead.OuterMessage_ID.ToString(),
+                    outletCode,
+                    responsibleName);
 
-            UpdateLeadSuccessStatus(lead);
-            _logger.LogInformation($"Сообщение ({lead.OuterMessage_ID}) с outlet_code {outletCode} было успешно обработано (ResponsibleUserName)");
+                if (statusResponse == null || !statusResponse.is_success)
+                {
+                    throw new Exception($"Ошибка отправки статуса ResponsibleUserName: {statusResponse?.error}");
+                }
+
+                UpdateLeadSuccessStatus(lead);
+                _logger.LogInformation($"[ResponsibleUserName] Сообщение ({lead.OuterMessage_ID}) с outlet_code {outletCode} успешно обработано");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[ResponsibleUserName] Ошибка для сообщения {lead.OuterMessage_ID}");
+                await UpdateLeadErrorStatusAsync(lead.OuterMessage_ID, ex.Message);
+                return false;
+            }
         }
 
-        private async Task ProcessDateReceptionUpdateAsync(OuterMessage lead, string outletCode, string dateString)
+        private async Task<bool> ProcessDateReceptionUpdateAsync(OuterMessage lead, string outletCode, string dateString)
         {
-            if (!DateTime.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            try
             {
-                throw new Exception($"Неверный формат даты: {dateString}");
+                if (!DateTime.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                {
+                    throw new Exception($"Неверный формат даты: {dateString}");
+                }
+
+                var statusDTO = new LeadStatusRequestDto()
+                {
+                    lead_id = lead.OuterMessage_ID.ToString(),
+                    status = "10",
+                    dealer_visit_planned_date = date,
+                    status_comment = "Запись перенесена"
+                };
+
+                var statusResponse = await _httpClientLeadService.SendStatusAsync(statusDTO, outletCode);
+
+                if (statusResponse == null || !statusResponse.is_success)
+                {
+                    throw new Exception($"Ошибка отправки статуса DateReception: {statusResponse?.error}");
+                }
+
+                UpdateLeadSuccessStatus(lead);
+                _logger.LogInformation($"[DateReception] Сообщение ({lead.OuterMessage_ID}) с outlet_code {outletCode} успешно обработано");
+                return true;
             }
-
-            var statusDTO = new LeadStatusRequestDto()
+            catch (Exception ex)
             {
-                lead_id = lead.OuterMessage_ID.ToString(),
-                status = "10",
-                dealer_visit_planned_date = date,
-                status_comment = "Запись перенесена"
-            };
-
-            var statusResponse = await _httpClientLeadService.SendStatusAsync(statusDTO, outletCode);
-
-            if (statusResponse == null || !statusResponse.is_success)
-            {
-                var errorMessage = $"Ошибка отправки статуса о переносе даты для ({lead.OuterMessage_ID}) с outlet_code {outletCode}: {statusResponse?.error}";
-                throw new Exception(errorMessage);
+                _logger.LogError(ex, $"[DateReception] Ошибка для сообщения {lead.OuterMessage_ID}");
+                await UpdateLeadErrorStatusAsync(lead.OuterMessage_ID, ex.Message);
+                return false;
             }
-
-            UpdateLeadSuccessStatus(lead);
-            _logger.LogInformation($"Сообщение ({lead.OuterMessage_ID}) с outlet_code {outletCode} было успешно обработано (DateReception)");
         }
 
         private void UpdateLeadSuccessStatus(OuterMessage lead)

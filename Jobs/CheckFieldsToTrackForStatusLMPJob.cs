@@ -32,7 +32,7 @@ namespace LeadsSaver_RabbitMQ.Jobs
                 var pendingMessages = await GetPendingMessagesAsync();
                 if (!pendingMessages.Any())
                 {
-                    _logger.LogDebug("Нет сообщений для обработки");
+                    //_logger.LogDebug("Нет сообщений для обработки");
                     return;
                 }
 

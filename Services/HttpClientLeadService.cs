@@ -73,22 +73,20 @@ namespace LMPWebService.Services
             new KeyValuePair<string, string>("scope", "int_leadcrm")
         });
 
-                //// Отправляем POST-запрос
-                //var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/identity/connect/token", requestBody);
+                // Отправляем POST-запрос
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/identity/connect/token", requestBody);
 
-                //// Проверяем успешность запроса
-                //response.EnsureSuccessStatusCode();
+                // Проверяем успешность запроса
+                response.EnsureSuccessStatusCode();
 
-                //// Читаем ответ и десериализуем JSON
-                //var responseContent = await response.Content.ReadAsStringAsync();
-                //var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+                // Читаем ответ и десериализуем JSON
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
 
-                //if (tokenResponse?.access_token != null)
-                //    _logger.LogInformation("Токен успешно получен");
+                if (tokenResponse?.access_token != null)
+                    _logger.LogInformation("Токен успешно получен");
 
-                //return tokenResponse;
-
-                return new TokenResponse() { access_token = "token", expires_in = 5, token_type = "p" };
+                return tokenResponse;
             }
             catch (Exception ex)
             {

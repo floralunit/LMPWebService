@@ -12,6 +12,7 @@ public class AstraDbContext : DbContext
     public DbSet<DictBase> DictBase { get; set; }
     public DbSet<DocumentBase> DocumentBase { get; set; }
     public DbSet<DocumentBaseParent> DocumentBaseParent { get; set; }
+    public DbSet<DocumentComment> DocumentComment { get; set; }
     public DbSet<WorkOrder> WorkOrder { get; set; }
     public DbSet<Contact> Contact { get; set; }
     public DbSet<Interest> Interest { get; set; }
@@ -68,6 +69,13 @@ public class AstraDbContext : DbContext
             entity
                 .ToTable("DocumentBaseParent", "dbo")
                 .HasKey(b => b.DocumentBaseParent_ID);
+
+        });
+        modelBuilder.Entity<DocumentComment>(entity =>
+        {
+            entity
+                .ToTable("DocumentComment", "dbo")
+                .HasKey(b => b.DocumentComment_ID);
 
         });
         modelBuilder.Entity<WorkOrder>(entity =>

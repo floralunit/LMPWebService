@@ -1,6 +1,7 @@
 ﻿using LeadsSaverRabbitMQ.MessageModels;
 using LMPWebService.Models;
 using LMPWebService.Services.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using YourNamespace.Dtos;
@@ -64,6 +65,9 @@ namespace LMPWebService.Services
                     if (ClientRefusalStatuses.Contains(statusID.Value))
                     {
                         statusToSend = 7;
+                        statusDTO.refuse_reason_comment = "Клиент отказался от дальнейшего общения";
+                        statusDTO.dealer_refuse_reason_id = 27;
+
                     }
                 }
                 else if (docTypeID == 140) // Электронное обращение
@@ -172,6 +176,8 @@ namespace LMPWebService.Services
                         var result = await ProcessContactWithInterest(contact, statusID.Value, docParents, docChildren);
                         statusToSend = result.statusToSend;
                         statusDTO = result.statusDTO;
+                        var docBase = await _dbContext.DocumentBase.FirstOrDefaultAsync(x => x.DocumentBase_ID == interest.Interest_ID);
+                        statusDTO.client_dms_id = docBase.DocumentBaseNumber;
                     }
                     else
                     {
@@ -210,7 +216,9 @@ namespace LMPWebService.Services
                     var workOrder = await _dbContext.WorkOrder
                         .FirstOrDefaultAsync(x => x.WorkOrder_ID == docID);
 
-                    statusToSend = ProcessWorkOrderStatus(statusID.Value, workOrder, statusDTO);
+                    var result = await ProcessWorkOrderStatus(statusID.Value, workOrder, statusDTO);
+                    statusToSend = result.statusToSend;
+                    statusDTO = result.statusDTO;
                 }
 
                 if (statusToSend != -1 && lead != null)
@@ -245,24 +253,25 @@ namespace LMPWebService.Services
             var statusDTO = new LeadStatusRequestDto();
 
             if (NotCompletedStatuses.Contains(statusId) &&
-                contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86") &&
+                contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86") && //встреча
                 docChildren.Count > 0)
             {
                 foreach (var childDoc in docChildren)
                 {
                     var childContact = await _dbContext.Contact
                         .FirstOrDefaultAsync(x => x.Contact_ID == childDoc.DocumentBase_ID &&
-                                              x.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86"));
+                                              x.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86")); //встреча
 
                     if (childContact != null)
                     {
                         var childDocumentBase = await _dbContext.DocumentBase
                             .FirstOrDefaultAsync(x => x.DocumentBase_ID == childContact.Contact_ID);
 
-                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747"))
+                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747")) //запланирован
                         {
                             statusToSend = 10;
-                            statusDTO.status_comment = "Содержание контакта (факт) \"невыполненного\" документа КсК";
+                            var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == childDocumentBase.DocumentBase_ID && x.DocumentCommentType_ID == 3);
+                            statusDTO.status_comment = comment?.Comment;
                             statusDTO.dealer_visit_planned_date = childContact.PlanDate;
                         }
                     }
@@ -271,33 +280,37 @@ namespace LMPWebService.Services
 
             if (CompletedStatuses.Contains(statusId))
             {
-                if (contact.ContactType_ID == Guid.Parse("bdece6ef-3a4f-45cc-b6ef-cb9e8e6d038c"))
+                if (contact.ContactType_ID == Guid.Parse("bdece6ef-3a4f-45cc-b6ef-cb9e8e6d038c")) // выдача
                 {
                     statusToSend = 44;
-                    statusDTO.status_comment = "Содержание контакта (факт) документа";
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
                 }
-                else if (contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86"))
+                else if (contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86")) //встреча
                 {
                     statusToSend = 9;
-                    statusDTO.status_comment = "Содержание контакта (факт) документа";
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
                 }
-                else if (contact.ContactType_ID == Guid.Parse("09eafe1d-e316-46ea-a0b8-58cd2152c4d2") ||
-                         contact.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"))
+                else if (contact.ContactType_ID == Guid.Parse("09eafe1d-e316-46ea-a0b8-58cd2152c4d2") || // звонок входящий
+                         contact.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")) // звонок исходящий
                 {
                     statusToSend = 36;
-                    statusDTO.status_comment = "Содержание контакта (факт) документа";
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
                 }
             }
 
-            if (contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86") &&
+            if (contact.ContactType_ID == Guid.Parse("f49301fc-9b95-4b2b-953c-3b02f58aaf86") && //встреча
                 PlannedStatuses.Contains(statusId))
             {
                 statusToSend = 8;
-                statusDTO.status_comment = "Содержание контакта (план)";
+                var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 2);
+                statusDTO.status_comment = comment?.Comment;
                 statusDTO.dealer_visit_planned_date = contact.PlanDate;
             }
 
-            if (contact.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"))
+            if (contact.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")) // звонок исходящий
             {
                 var outgoingCallResult = await ProcessOutgoingCall(contact, statusId, docParents, docChildren);
                 if (outgoingCallResult.statusToSend != -1)
@@ -307,19 +320,21 @@ namespace LMPWebService.Services
                 }
             }
 
-            if (contact.ContactType_ID == Guid.Parse("c25a8615-efdd-43e9-a4ec-38c5ecaa354d"))
+            if (contact.ContactType_ID == Guid.Parse("c25a8615-efdd-43e9-a4ec-38c5ecaa354d")) // тест-драйв
             {
                 if (PlannedStatuses.Contains(statusId))
                 {
                     statusToSend = 37;
-                    statusDTO.status_comment = "Содержание контакта (план)";
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 2);
+                    statusDTO.status_comment = comment?.Comment;
                     statusDTO.dealer_visit_planned_date = contact.PlanDate;
                 }
                 else if (statusId == Guid.Parse("331F0156-81CA-427F-B048-5C0EF177FBEF") ||
-                         statusId == Guid.Parse("A4DBB71A-4A40-4C1B-9C67-E85225A5B2CB"))
+                         statusId == Guid.Parse("A4DBB71A-4A40-4C1B-9C67-E85225A5B2CB")) //Запланирован -> Выполнен
                 {
                     statusToSend = 38;
-                    statusDTO.status_comment = "Содержание контакта (факт)";
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
                 }
             }
 
@@ -337,18 +352,25 @@ namespace LMPWebService.Services
 
             if (NotCompletedStatuses.Contains(statusId))
             {
+                if (contact.ContactFailureReason_ID == Guid.Parse("9735665F-902F-420C-A0A3-9AEA04DDE471"))//неверный номер
+                {
+                    statusToSend = 17;
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
+                }
+
                 foreach (var parentDoc in docParents)
                 {
                     var parentContact = await _dbContext.Contact
                         .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc.ParentDocumentBase_ID &&
-                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
                     if (parentContact != null)
                     {
                         var parentContactDocumentBase = await _dbContext.DocumentBase
                             .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact.Contact_ID);
 
-                        if (parentContactDocumentBase.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2"))
+                        if (parentContactDocumentBase.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2")) // не выполнен
                         {
                             var docParents2 = await _dbContext.DocumentBaseParent
                                 .Where(x => x.DocumentBase_ID == parentContactDocumentBase.DocumentBase_ID)
@@ -358,17 +380,18 @@ namespace LMPWebService.Services
                             {
                                 var parentContact2 = await _dbContext.Contact
                                     .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc2.ParentDocumentBase_ID &&
-                                                          x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                                                          x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
                                 if (parentContact2 != null)
                                 {
                                     var parentContactDocumentBase2 = await _dbContext.DocumentBase
                                         .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact2.Contact_ID);
 
-                                    if (parentContactDocumentBase2.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2"))
+                                    if (parentContactDocumentBase2.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2")) // не выполнен
                                     {
                                         statusToSend = 4;
-                                        statusDTO.status_comment = "Содержание контакта (факт)";
+                                        var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                                        statusDTO.status_comment = comment?.Comment;
                                     }
                                 }
                             }
@@ -383,18 +406,19 @@ namespace LMPWebService.Services
                 {
                     var childContact = await _dbContext.Contact
                         .FirstOrDefaultAsync(x => x.Contact_ID == childDoc.DocumentBase_ID &&
-                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
                     if (childContact != null)
                     {
                         var childDocumentBase = await _dbContext.DocumentBase
                             .FirstOrDefaultAsync(x => x.DocumentBase_ID == childContact.Contact_ID);
 
-                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747"))
+                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747")) // запланирован
                         {
                             statusToSend = 5;
                             statusDTO.dealer_recall_date = childContact.PlanDate;
-                            statusDTO.status_comment = "Содержание контакта (факт) \"невыполненного\" документа КсК";
+                            var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                            statusDTO.status_comment = comment?.Comment;
                         }
                     }
                 }
@@ -411,45 +435,69 @@ namespace LMPWebService.Services
         {
             int statusToSend = -1;
             var statusDTO = new LeadStatusRequestDto();
+            var docBase = await _dbContext.DocumentBase.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID);
+            statusDTO.client_dms_id = docBase.DocumentBaseNumber;
+
             if (NotCompletedStatuses.Contains(statusId))
             {
-                foreach (var parentDoc in docParents)
+                if (contact.ContactFailureReason_ID == Guid.Parse("9735665F-902F-420C-A0A3-9AEA04DDE471"))//неверный номер
                 {
-                    var parentContact = await _dbContext.Contact
-                        .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc.ParentDocumentBase_ID &&
-                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                    statusToSend = 17;
+                    statusDTO.status_comment = "Неверный номер телефона";
+                }
 
-                    if (parentContact != null)
+                if (contact.ContactFailureReason_ID == Guid.Parse("A7E1A10C-9FED-4BD3-861E-38DD6348FED1") || // Недоступен/Заблокирован
+                    contact.ContactFailureReason_ID == Guid.Parse("0602B2CA-3B88-406E-A0A4-3D381EA19E0D") || // Сбросил
+                    contact.ContactFailureReason_ID == Guid.Parse("3A7690B1-FFE1-46CE-8707-FD6EEF4010ED")) //Не отвечает
+                {
+
+                    foreach (var parentDoc in docParents)
                     {
-                        var parentContactDocumentBase = await _dbContext.DocumentBase
-                            .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact.Contact_ID);
+                        var parentContact = await _dbContext.Contact
+                            .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc.ParentDocumentBase_ID &&
+                                                  x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
-                        if (parentContactDocumentBase.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2"))
+                        if (parentContact != null)
                         {
-                            var docParents2 = await _dbContext.DocumentBaseParent
-                                .Where(x => x.DocumentBase_ID == parentContactDocumentBase.DocumentBase_ID)
-                                .ToListAsync();
+                            var parentContactDocumentBase = await _dbContext.DocumentBase
+                                .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact.Contact_ID);
 
-                            foreach (var parentDoc2 in docParents2)
+                            if (parentContactDocumentBase.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2")) // не выполнен
                             {
-                                var parentContact2 = await _dbContext.Contact
-                                    .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc2.ParentDocumentBase_ID &&
-                                                          x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                                var docParents2 = await _dbContext.DocumentBaseParent
+                                    .Where(x => x.DocumentBase_ID == parentContactDocumentBase.DocumentBase_ID)
+                                    .ToListAsync();
 
-                                if (parentContact2 != null)
+                                foreach (var parentDoc2 in docParents2)
                                 {
-                                    var parentContactDocumentBase2 = await _dbContext.DocumentBase
-                                        .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact2.Contact_ID);
+                                    var parentContact2 = await _dbContext.Contact
+                                        .FirstOrDefaultAsync(x => x.Contact_ID == parentDoc2.ParentDocumentBase_ID &&
+                                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
-                                    if (parentContactDocumentBase2.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2"))
+                                    if (parentContact2 != null)
                                     {
-                                        statusToSend = 4;
-                                        statusDTO.status_comment = "Содержание контакта (факт)";
+                                        var parentContactDocumentBase2 = await _dbContext.DocumentBase
+                                            .FirstOrDefaultAsync(x => x.DocumentBase_ID == parentContact2.Contact_ID);
+
+                                        if (parentContactDocumentBase2.DocumentAllowedState_ID == Guid.Parse("a28e950d-88fb-4769-a917-610eca7138e2")) // не выполнен
+                                        {
+                                            statusToSend = 4;
+                                            var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                                            statusDTO.status_comment = comment?.Comment;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                }
+                else
+                {
+                    statusToSend = 7;
+                    var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                    statusDTO.status_comment = comment?.Comment;
+                    statusDTO.refuse_reason_comment = "Прочее";
+                    statusDTO.dealer_refuse_reason_id = 4;
                 }
             }
 
@@ -459,18 +507,19 @@ namespace LMPWebService.Services
                 {
                     var childContact = await _dbContext.Contact
                         .FirstOrDefaultAsync(x => x.Contact_ID == childDoc.DocumentBase_ID &&
-                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a"));
+                                              x.ContactType_ID == Guid.Parse("a8cd493d-daa6-4af1-8c2d-6070334ea75a")); // звонок исходящий
 
                     if (childContact != null)
                     {
                         var childDocumentBase = await _dbContext.DocumentBase
                             .FirstOrDefaultAsync(x => x.DocumentBase_ID == childContact.Contact_ID);
 
-                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747"))
+                        if (childDocumentBase.DocumentAllowedState_ID == Guid.Parse("b00fb2fd-589e-447e-ad3e-1616445dc747")) //запланирован
                         {
                             statusToSend = 5;
                             statusDTO.dealer_recall_date = childContact.PlanDate;
-                            statusDTO.status_comment = "Содержание контакта (факт) \"невыполненного\" документа КсК";
+                            var comment = await _dbContext.DocumentComment.FirstOrDefaultAsync(x => x.DocumentBase_ID == contact.Contact_ID && x.DocumentCommentType_ID == 3);
+                            statusDTO.status_comment = comment?.Comment;
                         }
                     }
                 }
@@ -484,9 +533,11 @@ namespace LMPWebService.Services
             return (statusToSend, statusDTO);
         }
 
-        private int ProcessWorkOrderStatus(Guid statusId, WorkOrder workOrder, LeadStatusRequestDto statusDTO)
+        private async Task<(int statusToSend, LeadStatusRequestDto statusDTO)> ProcessWorkOrderStatus(Guid statusId, WorkOrder workOrder, LeadStatusRequestDto statusDTO)
         {
             var statusToSend = -1;
+            var docBase = await _dbContext.DocumentBase.FirstOrDefaultAsync(x => x.DocumentBase_ID == workOrder.WorkOrder_ID);
+            statusDTO.client_dms_id = docBase.DocumentBaseNumber;
 
             if (statusId == Guid.Parse("BE8D9882-5A81-4007-970F-8CACDC401E82") ||
                 statusId == Guid.Parse("E43B0048-1CBA-4681-946C-AD231192A222") ||
@@ -501,7 +552,7 @@ namespace LMPWebService.Services
                 statusId == Guid.Parse("10E3FA11-8ADF-452A-93E6-C5B80C46184A") ||
                 statusId == Guid.Parse("BB4AE67D-AC49-4F19-97A1-25AF8DDD0069") ||
                 statusId == Guid.Parse("098C117F-30A0-4506-A170-84806CCFC150") ||
-                statusId == Guid.Parse("34C40DEE-47D3-4EF9-8F9E-F73FEB460E67"))
+                statusId == Guid.Parse("34C40DEE-47D3-4EF9-8F9E-F73FEB460E67")) //-> Автомобиль поступил
             {
                 statusToSend = 9;
                 statusDTO.status_comment = "Автомобиль поступил";
@@ -509,27 +560,43 @@ namespace LMPWebService.Services
             else if (statusId == Guid.Parse("AEFD9D1C-FF5D-469C-8A09-9C1C45987D43") ||
                      statusId == Guid.Parse("6AF78A95-68E0-44E3-B258-AEFAC1F5516B") ||
                      statusId == Guid.Parse("84166577-1670-4FDE-B4EB-E15B7D891F84") ||
-                     statusId == Guid.Parse("8CE97943-D26A-44AC-84FB-FB3222B3058D"))
+                     statusId == Guid.Parse("8CE97943-D26A-44AC-84FB-FB3222B3058D")) //Создана -> Удалена
             {
                 statusToSend = 41;
                 statusDTO.status_comment = "Консультация проведена";
             }
-            else if (statusId == Guid.Parse("479B4D5B-9C76-43A7-A1EB-8AF851C407BE"))
+            else if (statusId == Guid.Parse("479B4D5B-9C76-43A7-A1EB-8AF851C407BE"))//Создана -> Предварительная запись
             {
                 statusToSend = 8;
                 statusDTO.dealer_visit_planned_date = workOrder?.ReceptionDate;
+            }
+            else if (ClientRefusalStatuses.Contains(statusId) || AnnulledStatuses.Contains(statusId))
+            {
+                statusToSend = 7;
+
+                var docChild = await _dbContext.DocumentBaseParent
+                    .Where(x => x.ParentDocumentBase_ID == workOrder.WorkOrder_ID)
+                    .FirstOrDefaultAsync();
+                var childContact = await _dbContext.Contact.FirstOrDefaultAsync(x => x.ContactWorkOrderRefuseReason_ID != null && x.Contact_ID == docChild.DocumentBase_ID);
+                if (childContact != null)
+                {
+                    var refuseID = GetRefuseReasonId(childContact.ContactWorkOrderRefuseReason_ID.Value);
+                    statusDTO.dealer_refuse_reason_id = refuseID;
+                    statusDTO.refuse_reason_comment = GetRefuseReasonName(refuseID);
+
+                }
+            }
+            else if (statusId == Guid.Parse("93FE5BEC-2D58-4C67-8C44-CD6E838086AB")) //Автомобиль принят -> Автомобиль выдан
+            {
+                statusToSend = 11;
+                statusDTO.status_comment = "Ремонт выполнен";
             }
             else if (ClientRefusalStatuses.Contains(statusId))
             {
                 statusToSend = 7;
             }
-            else if (statusId == Guid.Parse("93FE5BEC-2D58-4C67-8C44-CD6E838086AB"))
-            {
-                statusToSend = 11;
-                statusDTO.status_comment = "Ремонт выполнен";
-            }
 
-            return statusToSend;
+            return (statusToSend, statusDTO);
         }
 
         private async Task SendLeadStatus(
@@ -616,7 +683,7 @@ namespace LMPWebService.Services
         }
 
         // Статические коллекции для хранения GUID-ов статусов
-        private static readonly HashSet<Guid> ClientRefusalStatuses = new()
+        private static readonly HashSet<Guid> ClientRefusalStatuses = new() // -> отказ
         {
             Guid.Parse("00067AD7-0C2C-4E12-9E93-0AF4209C6560"),
             Guid.Parse("6E2943A8-E39E-46D5-B3DC-48C0660C34E1"),
@@ -634,6 +701,129 @@ namespace LMPWebService.Services
             Guid.Parse("BF0D002A-3A58-4F3D-B310-8320BD767B48"),
             Guid.Parse("94D68B48-B848-4039-BC0E-AE263D770FB6"),
             Guid.Parse("0F1D0775-D275-4186-B860-3B180749C580")
+        };
+
+        private static readonly HashSet<Guid> AnnulledStatuses = new()
+        {
+            // Аннулирован <- Автомобиль выдан
+            Guid.Parse("1E1109C7-0764-4D75-83D4-28C1F1451A87"),
+    
+            // Аннулирован <- Автомобиль поступил
+            Guid.Parse("F998B2F1-0027-458E-B7A0-0AEB43C7EF12"),
+            Guid.Parse("676C59B4-8D5B-4668-8515-42E349D62654"),
+            Guid.Parse("3FFADC68-27BF-4D33-B335-683FDE910816"),
+    
+            // Аннулирован <- В работе
+            Guid.Parse("984F222A-A445-4385-A66E-217BB37BF8ED"),
+            Guid.Parse("4950C80D-6188-43B7-9F5B-44C8E97D75AB"),
+            Guid.Parse("E3C1C618-84E8-4DC8-B2A1-6E45E947A42E"),
+            Guid.Parse("4F032059-4B82-4C77-A142-71597378A28F"),
+            Guid.Parse("7308DAAF-7120-42BC-BDA6-80A08594E4CA"),
+            Guid.Parse("3CC8E7D2-5867-410F-A45C-89CB5A48B12E"),
+            Guid.Parse("AA04FB96-5AE5-492D-94DD-F19EE50B3F31"),
+    
+            // Аннулирован <- Выполнен
+            Guid.Parse("8BD9BDCC-C355-4A0D-A599-96E875989EB6"),
+    
+            // Аннулирован <- Выставлен
+            Guid.Parse("E63E9A5C-469E-4B6C-B3A4-2BF416EF3D9E"),
+            Guid.Parse("CC9FF717-9260-45AB-BC19-C04F21B78F8F"),
+            Guid.Parse("92D6A3B0-3BCC-4D8E-82D5-5D935DA5F3C9"),
+            Guid.Parse("9393F860-036F-4FFC-A364-B00425B5350B"),
+    
+            // Аннулирован <- Закрыт
+            Guid.Parse("279177A1-5F9B-442D-B1F9-195481E6ED42"),
+            Guid.Parse("75218A09-4594-445B-896E-4AFD037A0EAE"),
+            Guid.Parse("05544E2B-97EE-4EDC-9679-6F08416135D4"),
+            Guid.Parse("38BEF845-2602-45D6-8DCF-A44ABFB130C1"),
+            Guid.Parse("F7BE6EA4-0334-4791-B600-BB02F3013B78"),
+            Guid.Parse("E3D1FB28-DB6F-4EDD-A453-D7EE12373CCC"),
+            Guid.Parse("2FCC8A6D-A675-413F-9272-EAC27976105E"),
+    
+            // Аннулирован <- Зафиксирована цена
+            Guid.Parse("C46AE575-B884-47E1-99AD-AFD38B54894A"),
+    
+            // Аннулирован <- Отработан
+            Guid.Parse("6A9467FA-BF83-4476-99D1-59ECDFF797C4"),
+    
+            // Аннулирован <- Оформлен
+            Guid.Parse("76C303D2-379B-4549-9F52-0D3EB5751DE3"),
+            Guid.Parse("6A9B350B-7BDF-47D0-847F-13F32FF4C90D"),
+            Guid.Parse("A6FAF297-1615-4EE6-AD1E-1DEDA6A110FF"),
+            Guid.Parse("9C001B31-A471-4E59-91D7-318DD54E9CD5"),
+            Guid.Parse("73560350-DFAF-420F-B434-85A18AEB0BB2"),
+            Guid.Parse("9084AA64-6C62-4536-B709-9BB2763D09D5"),
+            Guid.Parse("D169E719-27CA-4C33-BA05-CF6DAEBD7F7B"),
+            Guid.Parse("1A256850-40CC-4DD2-ADBF-EF1A7A6E9BAE"),
+            Guid.Parse("37992B3F-CF03-4220-ABA0-FCABD05C7758"),
+    
+            // Аннулирован <- Оформление
+            Guid.Parse("F434BE9B-AED3-4613-ABE0-91DAF17319DA"),
+    
+            // Аннулирован <- Оформление 50/100
+            Guid.Parse("E9FB0AE7-AE86-4490-AE5E-59D1B80B3D63"),
+    
+            // Аннулирован <- Передан клиенту
+            Guid.Parse("92AA592E-520E-4DC8-8B90-670F53FED0A5"),
+    
+            // Аннулирован <- Переоценка
+            Guid.Parse("12261FA9-C6F2-4DAF-8DA6-4D20F6AB66E2"),
+            Guid.Parse("87C00FE0-10DF-498C-AECE-E2D6DE30C631"),
+    
+            // Аннулирован <- Подписан
+            Guid.Parse("945821C2-CA85-4279-A0D8-F10757AFCD74"),
+    
+            // Аннулирован <- Подтвержден
+            Guid.Parse("0647FD63-A798-4561-8680-9B009A7A648C"),
+            Guid.Parse("AA58E47E-3197-423D-9655-C97E72C8B79C"),
+            Guid.Parse("3A400D9F-0D5C-45B4-BCF5-1A51D5B88B18"),
+            Guid.Parse("4DBD17C6-093D-49E8-9883-1DF1CCDF01FE"),
+            Guid.Parse("8C0D3C4D-C572-4F95-8C23-2884140F62EF"),
+            Guid.Parse("15977D90-328A-4923-8BBB-40E27200923B"),
+            Guid.Parse("B985A910-07EB-4A97-B0E1-650E2359B39A"),
+            Guid.Parse("50164E83-3400-4000-B1AF-6A2522E071A3"),
+            Guid.Parse("33612BE2-5692-4E6E-A83E-6F2E63AB367B"),
+            Guid.Parse("86F7098B-16D2-4CD3-8608-799FEC2B21F8"),
+            Guid.Parse("E0DC2DA2-FFA1-4D3B-A792-943006A61503"),
+            Guid.Parse("7DFD08C9-7BBE-48C1-AC78-9882F745E7CE"),
+            Guid.Parse("6F821C2A-1A9B-433F-8691-A9AAC258253B"),
+            Guid.Parse("5CDEBE68-75EB-4F13-9D23-AE4E8F183D37"),
+            Guid.Parse("CB80BD35-4841-4178-BA78-E12AAEF0BAED"),
+    
+            // Аннулирован <- Принят
+            Guid.Parse("96CD2BAC-33C9-4ABE-B202-4A30D672E768"),
+            Guid.Parse("46ACACFC-D403-42B6-BC4C-94B36F19FD7A"),
+    
+            // Аннулирован <- Реализация
+            Guid.Parse("9FFDE2C0-241F-45AE-8BAA-681C3A4B952C"),
+    
+            // Аннулирован <- Резерв
+            Guid.Parse("3834141A-0FB3-479B-AC8E-0D637348A214"),
+    
+            // Аннулирован <- Согласован
+            Guid.Parse("A9C07BC9-7525-44F5-A76E-C86E61CB4EA7"),
+    
+            // Аннулирован <- Создан
+            Guid.Parse("89782A16-F4C2-4FDE-90CF-04740BCB051A"),
+            Guid.Parse("889BDAF3-F899-4E4E-ACEE-250BD41CA6D3"),
+            Guid.Parse("1529D877-34B9-47D1-9BD4-2C059FC8F9D5"),
+            Guid.Parse("8DDC6D6A-E9DC-440C-8CF0-38FB9369A737"),
+            Guid.Parse("F75E34DF-35E5-48E1-94F2-3E220187DC60"),
+            Guid.Parse("C11CB943-0584-45AD-B31F-40A23FCD8BDB"),
+            Guid.Parse("D0ED3145-3EE4-4BAE-AFC3-47799BB16259"),
+            Guid.Parse("AB4E9D18-A5A4-40B3-B66F-645032A62555"),
+            Guid.Parse("2FE66275-1F11-405F-966C-6B5447B01EB0"),
+            Guid.Parse("26414FE8-6BD3-4FD2-A037-72CED005CD76"),
+            Guid.Parse("B83050A3-10C1-47EC-B913-846FCC3197D4"),
+            Guid.Parse("9736F959-E56A-4FF6-9B2E-85DDE78823C7"),
+            Guid.Parse("8ED97D2C-567C-4A53-A1D8-8B05DAD756A7"),
+            Guid.Parse("BAEDD4D2-9200-4DB0-927B-8D8AC7421314"),
+            Guid.Parse("FD5DC105-B9FB-42DE-9039-8FF58DA97134"),
+            Guid.Parse("7AA56A7A-0566-4049-99C5-914EE78A9D4F"),
+            Guid.Parse("CD9202A6-CD62-4E0C-BE30-99185B0A6892"),
+            Guid.Parse("EC5AED25-50FA-4DDB-9B00-A8666855169D"),
+            Guid.Parse("7051A2D9-74B0-4C10-87D2-DA868C0273BD"),
+            Guid.Parse("A2256FFD-C07A-4101-85C2-E596C93B480C")
         };
 
         private static readonly HashSet<Guid> DeletedStatuses = new()
@@ -701,6 +891,56 @@ namespace LMPWebService.Services
             Guid.Parse("D0CDF996-D3AF-4A0F-A353-EB7BCA19F7C6"),
             Guid.Parse("8391C0AF-F11E-4CA3-A6E3-03DA4C07CB46"),
             Guid.Parse("575AC02F-E1BF-4C49-B57D-94BEB03E2232")
+        };
+
+        public static int GetRefuseReasonId(Guid reasonGuid)
+        {
+            if (GuidToReasonIdMap.TryGetValue(reasonGuid, out int reasonId))
+            {
+                return reasonId;
+            }
+            return 4;
+        }
+
+        public static string GetRefuseReasonName(int reasonId)
+        {
+            if (ReasonIdToNameMap.TryGetValue(reasonId, out string reasonName))
+            {
+                return reasonName;
+            }
+            return string.Empty;
+        }
+
+        private static readonly Dictionary<int, string> ReasonIdToNameMap = new Dictionary<int, string>
+        {
+            { 4, "Прочее" },
+            { 34, "Отказ клиента" },
+            { 6, "Высокая стоимость" },
+            { 7, "Нет времени/занят" },
+            { 1, "Обратится самостоятельно" },
+            { 31, "Не устроили условия" }
+        };
+
+        private static readonly Dictionary<Guid, int> GuidToReasonIdMap = new Dictionary<Guid, int>
+        {
+            { Guid.Parse("ED93265C-9EF5-4F01-AF31-04DE036A17C8"), 4 },   // Услуга не предоставляется
+            { Guid.Parse("28CC55E6-82CC-45D8-998D-63E1473B13BE"), 1 },   // Клиент не определился
+            { Guid.Parse("B91854BD-2859-47CA-A0B3-D0138F151D60"), 4 },   // Неинтересное предложение (Прочее)
+            { Guid.Parse("E921CCF1-18E8-49A5-A580-F17D737E6289"), 4 },   // Продал авто, новый не купил (Прочее)
+            { Guid.Parse("1CB95F2B-E551-4372-A592-20F7C7F72B55"), 6 },   // Дорого
+            { Guid.Parse("CB41C518-493E-4F84-9827-7275A0CA279A"), 4 },   // Не обслуживается у дилера (Прочее)
+            { Guid.Parse("7D2D5E14-4B2B-4583-BC25-A18CAE786232"), 1 },   // Сравнивает цены
+            { Guid.Parse("FAD6B10C-692C-4839-BC77-DC9156FD43D3"), 4 },   // Продал авто, купил непрофильный (Прочее)
+            { Guid.Parse("B604CD40-4F5D-4636-ABEA-0544DE1CA663"), 34 },  // Неудобное расположение
+            { Guid.Parse("A5A5C969-EF13-478E-B236-33C0046C8329"), 7 },   // Неудобное время визита
+            { Guid.Parse("2E1DF5CE-3CF2-468A-886C-5D270D52723C"), 1 },   // Запишется сам
+            { Guid.Parse("AC4865F3-8823-4AC1-B3F3-D7AFA77C3161"), 31 },  // Отсутствуют ЗЧ
+            { Guid.Parse("7B59D17B-41DD-4842-995E-EFFA14A94E7D"), 4 },   // Обслуживается у другого дилера (Прочее)
+            { Guid.Parse("3064D75D-410E-41A4-99EE-0437F2A04201"), 4 },   // Нарекания на качество выполненных работ (Прочее)
+            { Guid.Parse("C22F51DE-F351-401E-BF76-809109C20E92"), -1 },  // Клиент записан (не является отказом)
+            { Guid.Parse("00869C39-6DCC-49A2-B9D1-9CAF59C6CC85"), 4 },   // Обслуживается в другом ДЦ ГК (Прочее)
+            { Guid.Parse("8D12B6DA-1955-46D0-9C85-C80CC0681DF2"), 4 },   // Продал авто, купил профильный (Прочее)
+            { Guid.Parse("BF513583-0A9D-486B-993A-E6C53DA8B4BC"), 34 }   // Отказался через ЛК
         };
     }
 }

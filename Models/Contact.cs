@@ -6,6 +6,7 @@
         public Guid? ContactType_ID { get; set; }
         public Guid? ContactSubject_ID { get; set; }
         public Guid? ContactFailureReason_ID { get; set; }
+        public Guid? ContactWorkOrderRefuseReason_ID { get; set; }
         public DateTime? PlanDate { get; set; }
 
     }

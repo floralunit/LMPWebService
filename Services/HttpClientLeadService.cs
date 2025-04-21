@@ -111,15 +111,15 @@ namespace LMPWebService.Services
                 }
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
 
-                //var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/lead_distributed", content);
-                //response.EnsureSuccessStatusCode();
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/lead_distributed", content);
+                response.EnsureSuccessStatusCode();
 
-                //var responseContent = await response.Content.ReadAsStringAsync();
-                //var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
 
-                //return statusResponse;
+                return statusResponse;
 
-                return new LeadStatusResponseDto() { is_success = true };
+                //return new LeadStatusResponseDto() { is_success = true };
             }
             catch (Exception ex)
             {
@@ -146,15 +146,15 @@ namespace LMPWebService.Services
                 }
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
 
-                //var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/status", content);
-                //response.EnsureSuccessStatusCode();
+                var response = await _httpClient.PostAsync($"{_authSettings.BaseUrl}/v1/crm/status", content);
+                response.EnsureSuccessStatusCode();
 
-                //var responseContent = await response.Content.ReadAsStringAsync();
-                //var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var statusResponse = JsonSerializer.Deserialize<LeadStatusResponseDto>(responseContent);
 
-                //return statusResponse;
+                return statusResponse;
 
-                return new LeadStatusResponseDto() { is_success = true };
+                //return new LeadStatusResponseDto() { is_success = true };
             }
             catch (Exception ex)
             {

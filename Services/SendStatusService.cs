@@ -96,9 +96,9 @@ namespace LMPWebService.Services
                 }
                 else if (docTypeID == 56) // Договор на продажу
                 {
-                    _logger.LogInformation(
-                        "[SendStatusService] Начата обработка статуса для договора на продажу, docID = {DocumentId}",
-                        docID);
+                    //_logger.LogInformation(
+                    //    "[SendStatusService] Начата обработка статуса для договора на продажу, docID = {DocumentId}",
+                    //    docID);
 
                     var eMessage = await GetEMessageBySalesContractId(docID.Value);
                     if (eMessage == null) return;
@@ -127,9 +127,9 @@ namespace LMPWebService.Services
                 }
                 else if (docTypeID == 1) // Контакт с клиентом
                 {
-                    _logger.LogInformation(
-                        "[SendStatusService] Начата обработка статуса для контакта с клиентом, docID = {DocumentId}",
-                        docID);
+                    //_logger.LogInformation(
+                    //    "[SendStatusService] Начата обработка статуса для контакта с клиентом, docID = {DocumentId}",
+                    //    docID);
 
                     var contact = await _dbContext.Contact
                         .FirstOrDefaultAsync(x => x.Contact_ID == docID);
@@ -186,9 +186,9 @@ namespace LMPWebService.Services
                 }
                 else if (docTypeID == 57) // Заявка на ремонт
                 {
-                    _logger.LogInformation(
-                        "[SendStatusService] Начата обработка статуса для заявки на ремонт, docID = {DocumentId}",
-                        docID);
+                    //_logger.LogInformation(
+                    //    "[SendStatusService] Начата обработка статуса для заявки на ремонт, docID = {DocumentId}",
+                    //    docID);
 
                     var docParent = await _dbContext.DocumentBaseParent
                         .FirstOrDefaultAsync(x => x.DocumentBase_ID == docID);

@@ -30,7 +30,7 @@ namespace LMPWebService.Consumers
             {
                 return;
             }
-            _logger.LogInformation($"NEW LMP STATUS MESSAGE Received: LMP Status Message for document ({context.Message.astra_document_id}))");
+            //_logger.LogInformation($"NEW LMP STATUS MESSAGE Received: LMP Status Message for document ({context.Message.astra_document_id}))");
             await _sendStatusService.SendStatusAsync(context.Message);
         }
     }

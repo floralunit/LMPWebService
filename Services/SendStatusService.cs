@@ -45,7 +45,7 @@ namespace LMPWebService.Services
             var docTypeID = message.astra_document_subtype_id;
             var responsibleUserID = message.upd_application_user_id;
 
-            _logger.LogInformation($"[SendStatusService] Получено сообщение на обработку статуса emessage = {docID}, docTypeID={docTypeID}, statusID={statusID}");
+            _logger.LogInformation($"[SendStatusService] Получено сообщение на обработку статуса {docID}, docTypeID={docTypeID}, statusID={statusID}");
 
             // Проверка типа документа
             if (docTypeID != null &&

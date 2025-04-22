@@ -136,9 +136,7 @@ namespace LMPWebService.Services
 
                     if (contact == null)
                     {
-                        _logger.LogError(
-                            "[SendStatusService] Для contact = {ContactId} не найден соотвествующий Contact",
-                            docID);
+                        //_logger.LogError("[SendStatusService] Для contact = {ContactId} не найден соотвествующий Contact", docID);
                         return;
                     }
 

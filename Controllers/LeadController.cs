@@ -21,13 +21,16 @@ namespace LMPWebService.Controllers
         private readonly IHttpClientLeadService _httpClientLeadService;
         private readonly ILeadProcessingService _leadProcessingService;
 
+        private readonly ILogger<LeadController> _logger;
+
         public LeadController(IMassTransitPublisher massTransitPublisher, IHttpClientLeadService httpClientLeadService, IOuterMessageService messageService,
-                              ILeadProcessingService leadProcessingService)
+                              ILeadProcessingService leadProcessingService, ILogger<LeadController> logger)
         {
             _massTransitPublisher = massTransitPublisher;
             _httpClientLeadService = httpClientLeadService;
             _messageService = messageService;
             _leadProcessingService = leadProcessingService;
+            _logger = logger;
         }
         [HttpGet("receive")]
         public async Task<IActionResult> ReceiveLead([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
@@ -35,7 +38,10 @@ namespace LMPWebService.Controllers
             Guid.TryParse(request?.lead_id, out var leadIdGuid);
 
             if (leadIdGuid == Guid.Empty || request?.lead_id == null || string.IsNullOrEmpty(outlet_code))
+            {
+                _logger.LogError($"[ReceiveLeadPost] Поступил лид с некорректными данными lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
                 return BadRequest("Некорректные данные");
+            }
 
             var result = await _leadProcessingService.ProcessLeadAsync(leadIdGuid, outlet_code);
 
@@ -51,7 +57,10 @@ namespace LMPWebService.Controllers
             Guid.TryParse(request?.lead_id, out var leadIdGuid);
 
             if (leadIdGuid == Guid.Empty || request?.lead_id == null || string.IsNullOrEmpty(outlet_code))
+            {
+                _logger.LogError($"[ReceiveLeadPost] Поступил лид с некорректными данными lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
                 return BadRequest("Некорректные данные");
+            }
 
             var result = await _leadProcessingService.ProcessLeadAsync(leadIdGuid, outlet_code);
 

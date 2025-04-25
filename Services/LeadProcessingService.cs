@@ -35,7 +35,10 @@ namespace LMPWebService.Services
         {
             var leadData = await _httpClientLeadService.GetLeadDataAsync(leadId.ToString(), outlet_code);
             if (string.IsNullOrWhiteSpace(leadData))
+            {
+                _logger.LogError($"Не удалось выполнить запрос на поиск данных лида");
                 return ProcessingResult.Failure("Не удалось выполнить запрос на поиск данных лида");
+            }
 
             using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
@@ -64,6 +67,7 @@ namespace LMPWebService.Services
                     var statusID = jsonObject?.lead_info?.status_id.ToString();
                     if (statusID == "40") // когда пришел спам и надо удалить созданное обращение
                     {
+                        _logger.LogError($"[LeadProcessingService] Поступил лид на дисквалификацию {leadId} {outlet_code}");
                         if (!exist)
                         {
                             _logger.LogError($"[LeadProcessingService] Лид {leadId} не поступал в обработку. Обработка статуса 40 невозможна.");
@@ -120,6 +124,7 @@ namespace LMPWebService.Services
 
                     if (exist)
                     {
+                        _logger.LogError($"Данный лид уже был передан в обработку");
                         return ProcessingResult.Failure("Данный лид уже был передан в обработку");
                     }
 

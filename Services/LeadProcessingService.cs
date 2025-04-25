@@ -67,7 +67,7 @@ namespace LMPWebService.Services
                     var statusID = jsonObject?.lead_info?.status_id.ToString();
                     if (statusID == "40") // когда пришел спам и надо удалить созданное обращение
                     {
-                        _logger.LogError($"[LeadProcessingService] Поступил лид на дисквалификацию {leadId} {outlet_code}");
+                        _logger.LogInformation($"[LeadProcessingService] Поступил лид на дисквалификацию {leadId} {outlet_code}");
                         if (!exist)
                         {
                             _logger.LogError($"[LeadProcessingService] Лид {leadId} не поступал в обработку. Обработка статуса 40 невозможна.");
@@ -118,7 +118,7 @@ namespace LMPWebService.Services
                                         @DAT_ID = 'E918B3EC-351B-42E5-8855-BC575B95451F',
                                         @User_Id = {userID}");
                         }
-
+                        _logger.LogInformation($"[LeadProcessingService] Лид {leadId} успешно дисквалифицирован");
                         return ProcessingResult.Success();
                     }
 

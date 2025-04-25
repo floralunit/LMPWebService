@@ -35,7 +35,9 @@ namespace LMPWebService.Controllers
         [HttpGet("receive")]
         public async Task<IActionResult> ReceiveLead([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
         {
-            _logger.LogInformation($"[ReceiveLeadPost] Поступил лид на обработку lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
+            _logger.LogInformation("");
+            _logger.LogInformation("");
+            _logger.LogInformation($"[ReceiveLeadPost] ПОСТУПИЛ ЛИД НА ОБРАБОТКУ lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
 
             Guid.TryParse(request?.lead_id, out var leadIdGuid);
 
@@ -56,7 +58,9 @@ namespace LMPWebService.Controllers
         [HttpPost("receive")]
         public async Task<IActionResult> ReceiveLeadPost([FromQuery] string outlet_code, [FromBody] LeadReceivedRequest request)
         {
-            _logger.LogInformation($"[ReceiveLeadPost] Поступил лид на обработку lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
+            _logger.LogInformation("");
+            _logger.LogInformation("");
+            _logger.LogInformation($"[ReceiveLeadPost] ПОСТУПИЛ ЛИД НА ОБРАБОТКУ lead_id={request.lead_id}, outlet_code={outlet_code}, action={request.action}");
 
             Guid.TryParse(request?.lead_id, out var leadIdGuid);
 

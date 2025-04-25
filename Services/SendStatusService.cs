@@ -698,7 +698,16 @@ namespace LMPWebService.Services
             Guid.Parse("10079B2B-6F64-44C5-B1F4-2530BBA29E79"),
             Guid.Parse("BF0D002A-3A58-4F3D-B310-8320BD767B48"),
             Guid.Parse("94D68B48-B848-4039-BC0E-AE263D770FB6"),
-            Guid.Parse("0F1D0775-D275-4186-B860-3B180749C580")
+            Guid.Parse("0F1D0775-D275-4186-B860-3B180749C580"),
+            // New additions
+            Guid.Parse("5D541B5D-7E91-43FB-94B3-A09967CB6374"),
+            Guid.Parse("3C09C04D-C68C-4EE5-8142-A30DD22C6625"),
+            Guid.Parse("BA61EBFC-824E-48FD-BAE5-2333286CE74D"),
+            Guid.Parse("7E79C399-FAA4-438F-92BA-40CFFE723EBB"),
+            Guid.Parse("205C8E22-BB34-4DCA-9021-5A004372BA3C"),
+            Guid.Parse("5FC0979D-8E3A-4A1F-BBC0-6FB3A8C68C16"),
+            Guid.Parse("550D298D-EB40-4F97-B1D0-26A74B63365C"),
+            Guid.Parse("AF18C112-2AED-474F-8299-F90229F717CC")
         };
 
         private static readonly HashSet<Guid> AnnulledStatuses = new()
@@ -821,7 +830,32 @@ namespace LMPWebService.Services
             Guid.Parse("CD9202A6-CD62-4E0C-BE30-99185B0A6892"),
             Guid.Parse("EC5AED25-50FA-4DDB-9B00-A8666855169D"),
             Guid.Parse("7051A2D9-74B0-4C10-87D2-DA868C0273BD"),
-            Guid.Parse("A2256FFD-C07A-4101-85C2-E596C93B480C")
+            Guid.Parse("A2256FFD-C07A-4101-85C2-E596C93B480C"),
+            // New additions
+            Guid.Parse("341B0B23-D5D3-4B7D-894E-57DE6999E01C"),
+            Guid.Parse("4E9DDE0C-F328-41FD-A185-097537411828"),
+            Guid.Parse("979B6BA2-7F7C-4752-9CEF-C02DEB361CA0"),
+            Guid.Parse("C85250EF-5C89-4647-B6E4-E8A89B921C10"),
+            Guid.Parse("0DD93F3B-D54E-43D5-BC2C-36729AEE3A60"),
+            Guid.Parse("ECB852AF-4032-4715-B10B-FB8714195A69"),
+            Guid.Parse("DDBC9723-31C6-4A1C-A7B3-FE9890631D3C"),
+            Guid.Parse("980EDB8E-9D4B-4BAE-9641-61E3BC7F462C"),
+            Guid.Parse("E518DE03-376F-4939-BCB7-80A0ED85F884"),
+            Guid.Parse("9101AF19-2F30-4191-9EC5-B463A300AAD0"),
+            Guid.Parse("874BD22B-C266-43F2-BF48-87B17C5816A1"),
+            Guid.Parse("5ACEAE00-CB3F-4C3D-99CE-D7E5CDF8DAFC"),
+            Guid.Parse("766C0949-852D-4B1A-BEBF-08BA6090146C"),
+            Guid.Parse("2204BA80-9C30-43D0-B63E-1AF5098DDF04"),
+            Guid.Parse("DC7F2E59-CEE2-402D-844E-1E8D6F3B56D9"),
+            Guid.Parse("FCAA0606-AEE7-4105-A545-2AD9E6F01DC3"),
+            Guid.Parse("F7DC19C1-F884-4DCC-B455-3105C893DA4D"),
+            Guid.Parse("9258424C-6351-4DE8-BE3D-8C43F4BC7CEA"),
+            Guid.Parse("846FDE2D-969A-4517-A42D-C812FE6191F6"),
+            Guid.Parse("95186083-36D5-489A-BA8C-036C880FA798"),
+            Guid.Parse("E7B5A20D-DDF0-4AC7-8675-162190AB9BC4"),
+            Guid.Parse("4F92BF55-A337-42C7-AC05-1EF07EF95B23"),
+            Guid.Parse("EEEC05B7-4C88-4F30-8FD6-91820A4EC834"),
+            Guid.Parse("9976A11D-0DC5-459F-B486-5AB24AA5A8C1")
         };
 
         private static readonly HashSet<Guid> DeletedStatuses = new()

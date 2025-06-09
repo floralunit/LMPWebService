@@ -4,8 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LMPWebService.Models
 {
-    [Table("BMWIntegrationLogs")]
-    public class BMWIntegrationLog
+    public class BMWIntegrationLogs
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

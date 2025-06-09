@@ -29,7 +29,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
     {
         try
         {
-            var log = new BMWIntegrationLog
+            var log = new BMWIntegrationLogs
             {
                 LogDate = DateTime.UtcNow,
                 OperationType = operationType,
@@ -39,7 +39,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
                 CorrelationId = GenerateCorrelationId()
             };
 
-            await _dbContext.BMWIntegrationLog.AddAsync(log);
+            await _dbContext.BMWIntegrationLogs.AddAsync(log);
             await _dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -54,7 +54,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
     {
         try
         {
-            var log = new BMWIntegrationLog
+            var log = new BMWIntegrationLogs
             {
                 LogDate = DateTime.UtcNow,
                 OperationType = operationType,
@@ -70,7 +70,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
                 CorrelationId = GenerateCorrelationId()
             };
 
-            await _dbContext.BMWIntegrationLog.AddAsync(log);
+            await _dbContext.BMWIntegrationLogs.AddAsync(log);
             await _dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -84,7 +84,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
     {
         try
         {
-            var log = new BMWIntegrationLog
+            var log = new BMWIntegrationLogs
             {
                 LogDate = DateTime.UtcNow,
                 OperationType = operationType,
@@ -97,7 +97,7 @@ public class BmwIntegrationLogger : IBmwIntegrationLogger
                 CorrelationId = GenerateCorrelationId()
             };
 
-            await _dbContext.BMWIntegrationLog.AddAsync(log);
+            await _dbContext.BMWIntegrationLogs.AddAsync(log);
             await _dbContext.SaveChangesAsync();
         }
         catch (Exception ex)

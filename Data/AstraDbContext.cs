@@ -16,6 +16,7 @@ public class AstraDbContext : DbContext
     public DbSet<WorkOrder> WorkOrder { get; set; }
     public DbSet<Contact> Contact { get; set; }
     public DbSet<Interest> Interest { get; set; }
+    public DbSet<BMWIntegrationLog> BMWIntegrationLog { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +37,15 @@ public class AstraDbContext : DbContext
                 .HasKey(b => b.OuterMessage_ID);
 
         });
+
+        modelBuilder.Entity<BMWIntegrationLog>(entity =>
+        {
+            entity
+                .ToTable("BMWIntegrationLog", "stella")
+                .HasKey(b => b.LogId);
+
+        });
+
         modelBuilder.Entity<EMessage>(entity =>
         {
             entity

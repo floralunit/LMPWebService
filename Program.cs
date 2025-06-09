@@ -34,6 +34,7 @@ builder.Services.AddScoped<IOuterMessageRepository, OuterMessageRepository>();
 builder.Services.AddScoped<IOuterMessageService, OuterMessageService>();
 builder.Services.AddScoped<IMassTransitPublisher, MassTransitPublisher>();
 builder.Services.AddScoped<ISendEndpointProvider>(sp => sp.GetRequiredService<IBus>());
+builder.Services.AddScoped<IBmwIntegrationLogger, BmwIntegrationLogger>();
 builder.Services.AddHttpClient<IHttpClientLeadService, HttpClientLeadService>();
 builder.Services.AddTransient<IHttpClientLeadService, HttpClientLeadService>();
 
